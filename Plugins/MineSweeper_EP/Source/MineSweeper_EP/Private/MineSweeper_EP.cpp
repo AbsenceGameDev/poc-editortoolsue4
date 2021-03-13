@@ -184,7 +184,7 @@ FMineSweeper_EPModule::GenerateGrid(uint8_t XIn, uint8_t YIn) const
 #ifdef DEBUG_A
             UE_LOG(LogTemp, Warning, TEXT("OnButtonClick() Called"));
 #endif // DEBUG_A
-            
+
             /** Do things (Check neighbors etc) */
             ManagerShared->ClickTile(TileCoordVector.X, TileCoordVector.Y);
             // TAttribute<FSlateColor>& InColorAndOpacity{};
@@ -328,19 +328,18 @@ FGameManager::ClickTile(uint8_t XCoord, uint8_t YCoord)
     Coords Tile{XCoord, YCoord};
     ClickedTiles++;
 
-
     /** If clicked on Mine */
     if (GetAttributes<EBitField::IsMine>(Tile)) {
         /** If first tile is clicked */
         if (ClickedTiles == 0x1) {
 
 #ifdef DEBUG_A
-    UE_LOG(LogTemp, Warning, TEXT("First Tile clicked"));
+            UE_LOG(LogTemp, Warning, TEXT("First Tile clicked"));
 #endif // DEBUG_A
-            
+
             ReplaceMine(Tile);
         } else {
-            
+
 #ifdef DEBUG_A
             UE_LOG(LogTemp, Warning, TEXT("Mine Tile clicked!"));
 #endif // DEBUG_A
@@ -351,14 +350,14 @@ FGameManager::ClickTile(uint8_t XCoord, uint8_t YCoord)
 #ifdef DEBUG_A
         UE_LOG(LogTemp, Warning, TEXT("Last Tile clicked"));
 #endif // DEBUG_A
-        
+
         return EGameState::Win;
     }
 
 #ifdef DEBUG_A
     UE_LOG(LogTemp, Warning, TEXT("Free Tile clicked"));
 #endif // DEBUG_A
-    
+
     /** path to handle checking tile and freeing it */
     SpreadStep(Tile);
     return EGameState::Pass;
@@ -421,47 +420,56 @@ FGameManager::SpreadStep(Coords Tile)
     uint8_t Step = 0;
     bool    backtracker = true;
     while (backtracker) {
-        for (Step = 0; Step < 0x4; Step++) {
-            switch (Step) {
-                case 0x0: Tile.X -= (Tile.X > 0);
-                break;
-                case 0x1: Tile.X += (Tile.X < (CurrRowSize - 1));
-                break;
-                case 0x2: Tile.Y -= (Tile.Y > 0);
-                break;
-                case 0x3: Tile.Y += (Tile.Y < (CurrColSize - 1));
-                break;
-                default: break;
+        for (auto & ColMod : NeighbourCheck) {
+            for (auto & RowMod : NeighbourCheck) {
+                if (RowMod == 0 && ColMod == 0) {
+                    continue;
+                }
+                Step = RowMod + ColMod;
+
+                switch (ColMod) {
+                    case -0x1: Tile.Y -= (Tile.Y > 0);
+                        break;
+                    case 0x1: Tile.Y += (Tile.Y < (CurrColSize - 1));
+                        break;
+                    default: break;
+                }
+
+                switch (RowMod) {
+                    case -0x1: Tile.X -= (Tile.X > 0);
+                        break;
+                    case 0x1: Tile.X += (Tile.X < (CurrRowSize - 1));
+                        break;
+                    default: break;
+                }
+
+                CheckNeighbours(Tile);
+                const bool bCantStep = GetAttributes<EBitField::NeighbourMines>(Tile) > 0x0 ||
+                                       GetAttributes<EBitField::IsClicked>(Tile) > 0x0;
+
+                const bool bCanStep = GetAttributes<EBitField::NeighbourMines>(Tile) == 0x0 &&
+                                      GetAttributes<EBitField::IsClicked>(Tile) == 0x0;
+
+                /** go back one step if step can't contniue in any direction */
+                if (Step == 0x2 && bCantStep && (CurrentTilePath.size() > 0x1)) {
+                    Tile = CurrentTilePath.back(); // Reset tile, go to next step
+                    CurrentTilePath.pop_back();
+                    break;
+                }
+
+                /** Skip loop step if it isn't last four-way step */
+                if (bCantStep) {
+                    continue;
+                }
+
+                if (bCanStep) {
+                    CurrentTilePath.emplace_back(Tile);
+                    SetAttributes<EBitField::IsClicked>(Tile, 0x1);
+                    break;
+                }
             }
-
-            CheckNeighbours(Tile);
-
-            const bool bCantStep = GetAttributes<EBitField::NeighbourMines>(Tile) > 0x0 ||
-                                   GetAttributes<EBitField::IsClicked>(Tile) > 0x0;
-
-            const bool bCanStep = GetAttributes<EBitField::NeighbourMines>(Tile) == 0x0 &&
-                                  GetAttributes<EBitField::IsClicked>(Tile) == 0x0;
-
-            /** go back one step if step can't contniue in any direction */
-            if (Step == 0x3 && bCantStep && (CurrentTilePath.size() > 0x1)) {
-                Tile = CurrentTilePath.back(); // Reset tile, go to next step
-                CurrentTilePath.pop_back();
-                break;
-            }
-
-            /** Skip loop step if it isn't last four-way step */
-            if (bCantStep) {
-                continue;
-            }
-
-            if (bCanStep) {
-                CurrentTilePath.emplace_back(Tile);
-                SetAttributes<EBitField::IsClicked>(Tile, 0x1);
-                break;
-            }
-        
         }
-        if (Step >= 0x3 && (CurrentTilePath.size() == 0x1)) {
+        if (Step >= 0x2 && (CurrentTilePath.size() == 0x1)) {
             backtracker = false;
         }
     }
