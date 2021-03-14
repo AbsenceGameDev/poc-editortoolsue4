@@ -39,7 +39,7 @@ FMineSweeperEditorModule::FMineSweeperEditorModule()
     GameManager_->SetDifficulty<FGameManager::Normal>();
     GameManager_->PlaceMines();
     GameManager_->LoadState();
-    // BuildBtnSBrush();
+    BuildBtnSBrush();
     // TSharedPtr<FSlateTexture2DRHIRef> Texture = MakeShareable(new FSlateTexture2DRHIRef(16.0f, 16.0f, PF_B8G8R8A8, NULL, TexCreate_Dynamic, true));
     // BuildBtnSBrush();
 }
@@ -78,6 +78,7 @@ FMineSweeperEditorModule::StartupModule()
 void
 FMineSweeperEditorModule::ShutdownModule()
 {
+    GameManager_->SaveState();
     UToolMenus::UnRegisterStartupCallback(this);
     UToolMenus::UnregisterOwner(this);
     FMineSweeperEditorStyle::Shutdown();
