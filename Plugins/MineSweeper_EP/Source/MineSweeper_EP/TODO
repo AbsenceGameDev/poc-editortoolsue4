@@ -1,13 +1,13 @@
-﻿1a. Fetch Correct child-slot from SDockTab (ownership chain -> SDockTab:SWrapBox:SUniformGridPanel:Button[y][x])  
+﻿0a. Store Total wins/losses in saved filed (Done but haven't been tested)
+
+1a. Fetch Correct child-slot from SDockTab (ownership chain -> SDockTab:SWrapBox:SUniformGridPanel:Button[y][x])  
 1b. Display number on button (To use when revealed tile has minimum 1 neighbour)
 1c. Set revealed tile as clicked.
 1d. Take input from input box
 
-2b.
-
-3a. Register RMB in Slate, (Override OnClick functions for SButton?)
-4b. Display QuestionBrush or FlagBrush when RMB is pressed
+2a. Register RMB in Slate, (Override OnClick functions for SButton?)
+2b. Display QuestionBrush or FlagBrush when RMB is pressed
  
  
-5a. Secret win message is obfuscated in CustomAstar.h and is read through Binder() and Flipper(), 
+3a. Secret win message is obfuscated in CustomAstar.h and is read through Binder() and Flipper(), 
     which should only be called when 5 wins in a row, during one, session has been achieved.

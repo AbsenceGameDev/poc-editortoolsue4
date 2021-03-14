@@ -17,6 +17,7 @@
 #define MINESWEEPER_EP_H
 
 #include "CoreMinimal.h"
+#include "Modules/ModuleManager.h"
 #include <array>
 #include <vector>
 
@@ -27,7 +28,7 @@ class FMenuBuilder;
 using uint8_t = unsigned char;
 using uint16_t = unsigned short;
 using uint32_t = unsigned int;
-using uint64_t = unsigned long long;
+using uint64_t = unsigned long long int;
 using Coords = struct {
     uint16_t X;
     uint16_t Y;
@@ -118,6 +119,7 @@ public:
     TSharedPtr<SDockTab>      GameWindow;
     uint16_t                  NumMines = 0x0,    FreeTilesCount = 0x0, ClickedTiles = 0x0;
     uint16_t                  CurrRowSize = 0x8, CurrColSize = 0x8;
+    uint16_t                  Wins = 0x0,        Losses = 0x0;
 
     std::array<std::array<uint8_t, Gmax_Size>, Gmax_Size> GridData = {0};
     /* 256^2 bytes = 8kb, on a mcu it would be unacceptable, on a pc cpu with megabytes of cache it's negligible

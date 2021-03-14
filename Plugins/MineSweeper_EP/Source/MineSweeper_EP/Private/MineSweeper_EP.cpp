@@ -17,7 +17,6 @@
 static const FName GMineSweeper_EpTabName("MineSweeper_EP");
 
 #define LOCTEXT_NAMESPACE "FMineSweeper_EPModule"
-#define DEBUG_A
 
 /**
 *
@@ -89,7 +88,8 @@ FMineSweeper_EPModule::ShutdownModule()
 void
 FMineSweeper_EPModule::TabBtnClicked() const
 {
-    GameManager_->GameWindow = FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeper_EpTabName);
+    FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeper_EpTabName);
+    // GameManager_->GameWindow = FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeper_EpTabName);
 }
 
 void
@@ -148,17 +148,23 @@ FMineSweeper_EPModule::RegisterMenus()
     /** Owner will be used for cleanup in call to UToolMenus::UnregisterOwner */
     FToolMenuOwnerScoped OwnerScoped(this);
     {
-        UToolMenu *        Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
-        FToolMenuSection & Section = Menu->FindOrAddSection("WindowLayout");
-        Section.AddMenuEntryWithCommandList(FMineSweeper_EPCommands::Get().WindowContext, PluginCmds);
+        UToolMenu * Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
+        {
+            FToolMenuSection & Section = Menu->FindOrAddSection("WindowLayout");
+            Section.AddMenuEntryWithCommandList(FMineSweeper_EPCommands::Get().WindowContext, PluginCmds);
+        }
     }
 
     {
-        UToolMenu *        ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar");
-        FToolMenuSection & Section = ToolbarMenu->FindOrAddSection("Settings");
-        FToolMenuEntry &   Entry = Section.AddEntry(
-            FToolMenuEntry::InitToolBarButton(FMineSweeper_EPCommands::Get().WindowContext));
-        Entry.SetCommandList(PluginCmds);
+        UToolMenu * ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar");
+        {
+            FToolMenuSection & Section = ToolbarMenu->FindOrAddSection("Settings");
+            {
+                FToolMenuEntry & Entry = Section.AddEntry(
+                    FToolMenuEntry::InitToolBarButton(FMineSweeper_EPCommands::Get().WindowContext));
+                Entry.SetCommandList(PluginCmds);
+            }
+        }
     }
 }
 
@@ -180,10 +186,6 @@ FMineSweeper_EPModule::GenerateGrid(uint8_t XIn, uint8_t YIn) const
         {
             /** Open transaction to let editor know that we're about to do something */
             //GEditor->BeginTransaction(LOCTEXT("MoveActorsTransactionName", "CheckNeighbors"));
-
-#ifdef DEBUG_A
-            UE_LOG(LogTemp, Warning, TEXT("OnButtonClick() Called"));
-#endif // DEBUG_A
 
             /** Do things (Check neighbors etc) */
             ManagerShared->ClickTile(TileCoordVector.X, TileCoordVector.Y);
@@ -238,9 +240,9 @@ TSharedRef<SDockTab>
 FMineSweeper_EPModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 {
     const FText WelcomeText = LOCTEXT("WindowWidgetText",
-                                      "Welcome to MineSweeper. Win 5 matches in row to uncover a secret!"
-                                      "(Win/Loss is saved, but Secret Count resets when closing the editor.)"
-                                      "( Please, no cheating by looking at source code to find the secret.)");
+                                      "Welcome to MineSweeper. Win 8 matches during one session to uncover a secret!"
+                                      "(Win/Loss is saved, but Secret Count resets when closing the editor. Secret count is only applicable on hard or above)"
+                                      "( Please, no cheating by looking at source code to find the secret haha.)");
     return SNew(SDockTab).TabRole(ETabRole::NomadTab)
            [
                /** Put your tab contents */
@@ -332,32 +334,15 @@ FGameManager::ClickTile(uint8_t XCoord, uint8_t YCoord)
     if (GetAttributes<EBitField::IsMine>(Tile)) {
         /** If first tile is clicked */
         if (ClickedTiles == 0x1) {
-
-#ifdef DEBUG_A
-            UE_LOG(LogTemp, Warning, TEXT("First Tile clicked"));
-#endif // DEBUG_A
-
             ReplaceMine(Tile);
         } else {
-
-#ifdef DEBUG_A
-            UE_LOG(LogTemp, Warning, TEXT("Mine Tile clicked!"));
-#endif // DEBUG_A
+            Losses++;
             return EGameState::Loss;
         }
     } else if (ClickedTiles == FreeTilesCount) {
-
-#ifdef DEBUG_A
-        UE_LOG(LogTemp, Warning, TEXT("Last Tile clicked"));
-#endif // DEBUG_A
-
+        Wins++;
         return EGameState::Win;
     }
-
-#ifdef DEBUG_A
-    UE_LOG(LogTemp, Warning, TEXT("Free Tile clicked"));
-#endif // DEBUG_A
-
     /** path to handle checking tile and freeing it */
     SpreadStep(Tile);
     return EGameState::Pass;
@@ -483,21 +468,26 @@ FGameManager::EndGame()
 void
 FGameManager::SaveState()
 {
-    FString       filename = TEXT("SweeperData.dat");
-    IFileHandle * pFile = FPlatformFileManager::Get().GetPlatformFile().OpenWrite(*filename);
-    /** ... */
-    /** Do stuff! (Save data into pFile) */
-    /** ... */
+    // Works for now, but doesn't look purdy
+    const FString Filename = TEXT("SweeperData.dat");
+    IFileHandle * FilePtr = FPlatformFileManager::Get().GetPlatformFile().OpenWrite(*Filename);
+    uint8         TotalArr[4] = {0};
+    TotalArr[0] = Wins & 0xff;
+    TotalArr[1] = Wins >> 0x8;
+    TotalArr[2] = Losses & 0xff;
+    TotalArr[3] = Losses >> 0x8;
+    FilePtr->Write(&TotalArr[0], 0x4);
 }
 
 void
 FGameManager::LoadState()
 {
-    FString       filename = TEXT("SweeperData.dat");
-    IFileHandle * pFile = FPlatformFileManager::Get().GetPlatformFile().OpenRead(*filename);
-    /** ... */
-    /** Do stuff! (Read data from pFile) */
-    /** ... */
+    const FString Filename = TEXT("SweeperData.dat");
+    IFileHandle * FilePtr = FPlatformFileManager::Get().GetPlatformFile().OpenRead(*Filename);
+    uint8         TotalArr[4] = {0};
+    FilePtr->Read(&TotalArr[0x0], 0x4);
+    Wins = (TotalArr[0] << 0x8) | TotalArr[1];
+    Losses = (TotalArr[2] << 0x8) | TotalArr[3];
 }
 
 #undef LOCTEXT_NAMESPACE
