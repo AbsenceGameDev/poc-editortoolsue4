@@ -10,8 +10,8 @@
 #include "Widgets/Input/SNumericEntryBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Templates/SharedPointer.h"
+#include "Interfaces/IPluginManager.h"
 #include "Slate/SlateTextures.h"
-#include "CustomAstar.h"
 #include "ToolMenus.h"
 
 static const FName GMineSweeperEditorTabName("MineSweeperEditor");
@@ -25,8 +25,8 @@ static const FName GMineSweeperEditorTabName("MineSweeperEditor");
 * @function void StartupModule()
 * @function void ShutdownModule()
 * @function void TabBtnClicked()const
-* @function uint16_t GetX()const
-* @function uint16_t GetY()const
+* @function uint16 GetX()const
+* @function uint16 GetY()const
 * @function void CommittedX(const FText& NewText, ETextCommit::Type CommitType)
 * @function void CommittedY(const FText& NewText, ETextCommit::Type CommitType)
 * 
@@ -39,7 +39,7 @@ FMineSweeperEditorModule::FMineSweeperEditorModule()
     GameManager_->SetDifficulty<FGameManager::Normal>();
     GameManager_->PlaceMines();
     GameManager_->LoadState();
-    BuildBtnSBrush();
+    // BuildBtnSBrush();
     // TSharedPtr<FSlateTexture2DRHIRef> Texture = MakeShareable(new FSlateTexture2DRHIRef(16.0f, 16.0f, PF_B8G8R8A8, NULL, TexCreate_Dynamic, true));
     // BuildBtnSBrush();
 }
@@ -94,22 +94,46 @@ FMineSweeperEditorModule::TabBtnClicked() const
     // GameManager_->GameWindow = FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeperEditorTabName);
 }
 
+#define IMAGE_BRUSH( RelativePath, ... ) FSlateImageBrush( Style->RootToContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
+#define BOX_BRUSH( RelativePath, ... ) FSlateBoxBrush( Style->RootToContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
+#define BORDER_BRUSH( RelativePath, ... ) FSlateBorderBrush( Style->RootToContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
+#define TTF_FONT( RelativePath, ... ) FSlateFontInfo( Style->RootToContentDir( RelativePath, TEXT(".ttf") ), __VA_ARGS__ )
+#define OTF_FONT( RelativePath, ... ) FSlateFontInfo( Style->RootToContentDir( RelativePath, TEXT(".otf") ), __VA_ARGS__ )
+
 void
 FMineSweeperEditorModule::BuildBtnSBrush()
 {
     FlagBrush = MakeShared<FSlateImageBrush>("../../../Resources/flag16x16", FVector2D(16, 16));
     QuestionBrush = MakeShared<FSlateImageBrush>("../../../Resources/Q_16x16", FVector2D(16, 16));
+
+    // TSharedRef<FSlateStyleSet> Style = MakeShareable(new FSlateStyleSet("QuestionBtnStyle"));
+    // Style->SetContentRoot(
+    //     IPluginManager::Get().FindPlugin("MineSweeperEditor")->GetBaseDir() / TEXT("Resources"));
+    // Style->Set("MineSweeperEditor.WindowContext", new IMAGE_BRUSH(TEXT("Q_16x16"), {16.0f, 16.0f}));
+    // QuestionStyle = Style;
+    // TSharedRef<FSlateStyleSet> Style2 = MakeShareable(new FSlateStyleSet("QuestionBtnStyle"));
+    // Style->SetContentRoot(
+    //     IPluginManager::Get().FindPlugin("MineSweeperEditor")->GetBaseDir() / TEXT("Resources"));
+    // Style->Set("MineSweeperEditor.WindowContext", new IMAGE_BRUSH(TEXT("flag16x16"), {16.0f, 16.0f}));
+    // FlagStyle = Style;
 }
 
+#undef IMAGE_BRUSH
+#undef BOX_BRUSH
+#undef BORDER_BRUSH
+#undef TTF_FONT
+#undef OTF_FONT
+
+
 // get value to display in SNumericEntryBox
-uint16_t
+uint16
 FMineSweeperEditorModule::GetX() const
 {
     return X_INT;
 }
 
 // get value to display in SNumericEntryBox
-uint16_t
+uint16
 FMineSweeperEditorModule::GetY() const
 {
     return Y_INT;
@@ -118,7 +142,7 @@ FMineSweeperEditorModule::GetY() const
 // Set Value
 void
 FMineSweeperEditorModule::CommittedX(const FText &     NewText,
-                                  ETextCommit::Type CommitType)
+                                     ETextCommit::Type CommitType)
 {
     X_INT = FCString::Atoi(*NewText.ToString());
 }
@@ -126,7 +150,7 @@ FMineSweeperEditorModule::CommittedX(const FText &     NewText,
 // Set Value
 void
 FMineSweeperEditorModule::CommittedY(const FText &     NewText,
-                                  ETextCommit::Type CommitType)
+                                     ETextCommit::Type CommitType)
 {
     Y_INT = FCString::Atoi(*NewText.ToString());
 }
@@ -135,11 +159,10 @@ FMineSweeperEditorModule::CommittedY(const FText &     NewText,
 *
 * FMineSweeperEditorModule::  Private member functions \n\n
 * @function void RegisterMenus() \n\n
-* @function TSharedRef<SUniformGridPanel> GenerateGrid(uint8_t XIn, uint8_t YIn) const \n\n
+* @function TSharedRef<SUniformGridPanel> GenerateGrid(uint8 XIn, uint8 YIn) const \n\n
 * @function TSharedRef<SDockTab> OnSpawnTab(const FSpawnTabArgs& SpawnTabArgs) const \n\n
 * 
 */
-
 
 /**
 * @brief Register level editor menu
@@ -179,18 +202,50 @@ FMineSweeperEditorModule::RegisterMenus()
  * @return Shared reference of Grid panel, type: TSharedRef<SUniformGridPanel>
  **/
 TSharedRef<SUniformGridPanel>
-FMineSweeperEditorModule::GenerateGrid(uint8_t XIn, uint8_t YIn) const
+FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 {
     struct FSLocal {
-        static FReply OnButtonClick(Coords                       TileCoordVector,
+        static FReply OnButtonClick(Coords                       Tile,
                                     TSharedPtr<FGameManager>     ManagerShared,
                                     TSharedPtr<FSlateImageBrush> ImgBrush)
         {
             /** Open transaction to let editor know that we're about to do something */
             //GEditor->BeginTransaction(LOCTEXT("MoveActorsTransactionName", "CheckNeighbors"));
 
+            uint8 Obfs = 0x0;
             /** Do things (Check neighbors etc) */
-            ManagerShared->ClickTile(TileCoordVector.X, TileCoordVector.Y);
+            switch (ManagerShared->ClickTile(Tile.X, Tile.Y)) {
+                case FGameManager::EGameState::W: Obfs = ManagerShared->Ws;
+                    ManagerShared->SC() += Obfs * (ManagerShared->Obfsc<0b00111001>({0x10, 0x29}, 071));
+                    break;
+                case FGameManager::EGameState::L: Obfs = ManagerShared->Ls;
+                    ManagerShared->SC() += Obfs * (ManagerShared->Obfsc<0b00111011>({0x10, 0x29}, 071));
+                    break;
+                case FGameManager::EGameState::P: Obfs = ManagerShared->Ws;
+                    ManagerShared->SC() += Obfs * (ManagerShared->Obfsc<0b10111001>({0x10, 0x29}, 071));
+                    break;
+                default: break;
+            }
+
+            //ObfscDobfsc
+            if (ManagerShared->SCW<0b11001001>()) {
+                Binder(MReee MRael MRafl MRadl MReal MRaal MReel MRedl MRoel, ManagerShared->SContainer);
+                Flipper(ManagerShared->SContainer);
+                dcde(ManagerShared->SContainer, ManagerShared->RContainer);
+            } else if (ManagerShared->SCW<0b00111001>()) {
+                Binder(MReee MReel MRael MReal MRaal MRafl MRadl MRedl MRoel, ManagerShared->SContainer);
+                Flipper(ManagerShared->SContainer);
+                dcde(ManagerShared->SContainer, ManagerShared->RContainer);
+            } else if (ManagerShared->SCW<0b01010001>()) {
+                Binder(MReel MRael MRafl MRadl MReal MRaal MRoel MRedl MReee, ManagerShared->SContainer);
+                Flipper(ManagerShared->SContainer);
+                dcde(ManagerShared->SContainer, ManagerShared->RContainer);
+            } else if (ManagerShared->SCW<0b01010110>()) {
+                Binder(MRadl MRael MReee MReel MRedl MRoel MRaal MReal MRafl, ManagerShared->SContainer);
+                Flipper(ManagerShared->SContainer);
+                dcde(ManagerShared->SContainer, ManagerShared->RContainer);
+            }
+
             // TAttribute<FSlateColor>& InColorAndOpacity{};
             //TAttribute<const FSlateBrush*>& InBorderImage{ImgBrush.Get()};
             // BtnPtr->SetBorderImage(ImgBrush.Get()); // ImgBrush ptr invalid, nullptr, causes crash, figure out why
@@ -217,17 +272,20 @@ FMineSweeperEditorModule::GenerateGrid(uint8_t XIn, uint8_t YIn) const
         }
     };
 
-    auto     IdxField = SNew(SUniformGridPanel);
-    uint16_t Row = 0, Col = 0;
-    Coords   VSend;
+    auto   IdxField = SNew(SUniformGridPanel);
+    uint16 Row = 0, Col = 0;
+    Coords VSend;
+    // GameManager_->ButtonPtrs.resize(YIn);
     for (Col = 0; Col < YIn;) {
         VSend.Y = Row;
         for (Row = 0; Row < XIn;) {
             VSend.X = Row;
+            // SUniformGridPanel::FSlot * SlotRef = &
             IdxField->AddSlot(Col, Row)
             [
                 FSLocal::MakeButton(VSend, GameManager_, FlagBrush)
             ];
+            // GameManager_->ButtonPtrs.at(Col).emplace_back(SlotRef);
             Row++;
         }
         Col++;
@@ -290,9 +348,9 @@ FGameManager::PlaceMines()
 
     /** Continue until all random mines have been created. */
     for (int PlacedCount = 0; PlacedCount < NumMines;) {
-        const auto     Random = FMath::RandRange(0x0, GridSize);
-        const uint16_t X = Random / CurrRowSize;
-        const uint16_t Y = Random % CurrColSize;
+        const auto   Random = FMath::RandRange(0x0, GridSize);
+        const uint16 X = Random / CurrRowSize;
+        const uint16 Y = Random % CurrColSize;
 
         /** Add the mine if no mine is placed at this position on the board */
         if (!GetAttributes<EBitField::IsMine>({X, Y})) {
@@ -313,8 +371,8 @@ FGameManager::ReplaceMine(Coords Tile)
     if (!GetAttributes<EBitField::IsMine>({Tile.X, Tile.Y})) {
         return; /** Already no mine here, function called by mistake */
     }
-    for (uint16_t CurrCol = 0; CurrCol < CurrColSize; CurrCol++) {
-        for (uint16_t CurrRow = 0; CurrRow < CurrRowSize; CurrRow++) {
+    for (uint16 CurrCol = 0; CurrCol < CurrColSize; CurrCol++) {
+        for (uint16 CurrRow = 0; CurrRow < CurrRowSize; CurrRow++) {
             /** Place Mine at first free tile found, then clear input Tile */
             if (!GetAttributes<EBitField::IsMine>({CurrRow, CurrCol})) {
                 SetAttributes<EBitField::IsMine>({CurrRow, CurrCol}, 0x1);
@@ -327,9 +385,10 @@ FGameManager::ReplaceMine(Coords Tile)
 }
 
 FGameManager::EGameState
-FGameManager::ClickTile(uint8_t XCoord, uint8_t YCoord)
+FGameManager::ClickTile(uint8 XCoord, uint8 YCoord)
 {
-    Coords Tile{XCoord, YCoord};
+    const Coords Tile{XCoord, YCoord};
+    uint8        obfs = 0x0;
     ClickedTiles++;
 
     /** If clicked on Mine */
@@ -338,16 +397,16 @@ FGameManager::ClickTile(uint8_t XCoord, uint8_t YCoord)
         if (ClickedTiles == 0x1) {
             ReplaceMine(Tile);
         } else {
-            Losses++;
-            return EGameState::Loss;
+            Ls++;
+            return EGameState::L;
         }
     } else if (ClickedTiles == FreeTilesCount) {
-        Wins++;
-        return EGameState::Win;
+        Ws++;
+        return EGameState::W;
     }
     /** path to handle checking tile and freeing it */
     SpreadStep(Tile);
-    return EGameState::Pass;
+    return EGameState::P;
 }
 
 /**
@@ -364,8 +423,8 @@ FGameManager::ClickTile(uint8_t XCoord, uint8_t YCoord)
 void
 FGameManager::CheckNeighbours(const Coords TileCoords)
 {
-    uint8_t NeighbourCountLocal = 0;
-    Coords  TileCoordsLocal;
+    uint8  NeighbourCountLocal = 0;
+    Coords TileCoordsLocal;
     for (auto & ColMod : NeighbourCheck) {
         for (auto & RowMod : NeighbourCheck) {
             if (RowMod == 0 && ColMod == 0) {
@@ -404,8 +463,8 @@ FGameManager::SpreadStep(Coords Tile)
 
     auto GridSize = CurrRowSize * CurrColSize;
 
-    uint8_t Step = 0;
-    bool    backtracker = true;
+    uint8 Step = 0;
+    bool  backtracker = true;
     while (backtracker) {
         for (auto & ColMod : NeighbourCheck) {
             for (auto & RowMod : NeighbourCheck) {
@@ -467,17 +526,28 @@ FGameManager::EndGame()
 {
 }
 
+template<uint8 BitField>
+bool
+FGameManager::Obfsc(const Coords Tile, const uint8 Fieldval)
+{
+    return (Tile.X & Tile.Y) == (BitField & Fieldval);
+}
+
 void
-FGameManager::SaveState()
+FGameManager::SaveState() const
 {
     // Works for now, but doesn't look purdy
     const FString Filename = TEXT("SweeperData.dat");
     IFileHandle * FilePtr = FPlatformFileManager::Get().GetPlatformFile().OpenWrite(*Filename);
-    uint8         TotalArr[4] = {0};
-    TotalArr[0] = Wins & 0xff;
-    TotalArr[1] = Wins >> 0x8;
-    TotalArr[2] = Losses & 0xff;
-    TotalArr[3] = Losses >> 0x8;
+    if (FilePtr == nullptr) {
+        // Should create file if it does not already exist
+        return;
+    }
+    uint8 TotalArr[4] = {0};
+    TotalArr[0] = Ws & 0xff;
+    TotalArr[1] = Ws >> 0x8;
+    TotalArr[2] = Ls & 0xff;
+    TotalArr[3] = Ls >> 0x8;
     FilePtr->Write(&TotalArr[0], 0x4);
 }
 
@@ -486,10 +556,27 @@ FGameManager::LoadState()
 {
     const FString Filename = TEXT("SweeperData.dat");
     IFileHandle * FilePtr = FPlatformFileManager::Get().GetPlatformFile().OpenRead(*Filename);
-    uint8         TotalArr[4] = {0};
+    if (FilePtr == nullptr) {
+        // Should create file if it does not already exist
+        return;
+    }
+    uint8 TotalArr[4] = {0};
     FilePtr->Read(&TotalArr[0x0], 0x4);
-    Wins = (TotalArr[0] << 0x8) | TotalArr[1];
-    Losses = (TotalArr[2] << 0x8) | TotalArr[3];
+    Ws = (TotalArr[0] << 0x8) | TotalArr[1];
+    Ls = (TotalArr[2] << 0x8) | TotalArr[3];
+}
+
+uint8 &
+FGameManager::SC()
+{
+    return SC_;
+}
+
+template<uint8 BitField>
+bool
+FGameManager::SCW()
+{
+    return Obfsc<BitField>({0x10, 0x29}, 071) && (SC() >= 0b1000 && bConsW);
 }
 
 #undef LOCTEXT_NAMESPACE

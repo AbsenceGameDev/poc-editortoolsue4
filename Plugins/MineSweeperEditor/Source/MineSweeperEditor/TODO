@@ -8,8 +8,8 @@
 2b. Display QuestionBrush or FlagBrush when RMB is pressed
  
  
-3a. Secret win message is obfuscated in CustomAstar.h and is read through Binder() and Flipper(), 
-    which should only be called when 5 wins in a row, during one, session has been achieved.
+3a. Secret win message is obfuscated and is read through Binder() and Flipper(), 
+    which should only be called when 5 wins during one session has been achieved.
     
 ==================== DONE =====================
 0a. Store Total wins/losses in saved filed (Done but haven't been tested)
