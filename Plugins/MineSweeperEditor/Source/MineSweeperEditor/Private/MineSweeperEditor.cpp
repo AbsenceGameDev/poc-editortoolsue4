@@ -10,6 +10,7 @@
 #include "Widgets/Input/SNumericEntryBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Templates/SharedPointer.h"
+#include "Misc/FileHelper.h"
 #include "Interfaces/IPluginManager.h"
 #include "Slate/SlateTextures.h"
 #include "ToolMenus.h"
@@ -51,17 +52,19 @@ FMineSweeperEditorModule::StartupModule()
     FMineSweeperEditorStyle::Init();
     FMineSweeperEditorStyle::ReloadTextures();
     FMineSweeperEditorCommands::Register();
-
+    
     PluginCmds = MakeShareable(new FUICommandList);
+    GameManager_->DW();
     PluginCmds->MapAction(
         FMineSweeperEditorCommands::Get().WindowContext,
         FExecuteAction::CreateRaw(this, &FMineSweeperEditorModule::TabBtnClicked),
         FCanExecuteAction()
         );
 
+    GameManager_->BW();
     UToolMenus::RegisterStartupCallback(
         FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMineSweeperEditorModule::RegisterMenus));
-
+    GameManager_->BC();
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GMineSweeperEditorTabName,
                                                       FOnSpawnTab::CreateRaw(
                                                           this,
@@ -216,31 +219,31 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
             /** Do things (Check neighbors etc) */
             switch (ManagerShared->ClickTile(Tile.X, Tile.Y)) {
                 case FGameManager::EGameState::W: Obfs = ManagerShared->Ws;
-                    ManagerShared->SC() += Obfs * (ManagerShared->Obfsc<0b00111001>({0x10, 0x29}, 071));
+                    ManagerShared->SC() += Obfs * (FGameManager::Obfsc<0b00111001>({0x10, 0x29}, 071));
                     break;
                 case FGameManager::EGameState::L: Obfs = ManagerShared->Ls;
-                    ManagerShared->SC() += Obfs * (ManagerShared->Obfsc<0b00111011>({0x10, 0x29}, 071));
+                    ManagerShared->SC() += Obfs * (FGameManager::Obfsc<0b00111011>({0x10, 0x29}, 071));
                     break;
                 case FGameManager::EGameState::P: Obfs = ManagerShared->Ws;
-                    ManagerShared->SC() += Obfs * (ManagerShared->Obfsc<0b10111001>({0x10, 0x29}, 071));
+                    ManagerShared->SC() += Obfs * (FGameManager::Obfsc<0b10111001>({0x10, 0x29}, 071));
                     break;
                 default: break;
             }
 
             //ObfscDobfsc
-            if (ManagerShared->SCW<0b11001001>()) {
+            if (ManagerShared->SCW<0xc9>() && bCh ) {
                 Binder(MReee MRael MRafl MRadl MReal MRaal MReel MRedl MRoel, ManagerShared->SContainer);
                 Flipper(ManagerShared->SContainer);
                 dcde(ManagerShared->SContainer, ManagerShared->RContainer);
-            } else if (ManagerShared->SCW<0b00111001>()) {
+            } else if (ManagerShared->SCW<0x39>() && bCh) {
                 Binder(MReee MReel MRael MReal MRaal MRafl MRadl MRedl MRoel, ManagerShared->SContainer);
                 Flipper(ManagerShared->SContainer);
                 dcde(ManagerShared->SContainer, ManagerShared->RContainer);
-            } else if (ManagerShared->SCW<0b01010001>()) {
+            } else if (ManagerShared->SCW<0x51>() && bCh) {
                 Binder(MReel MRael MRafl MRadl MReal MRaal MRoel MRedl MReee, ManagerShared->SContainer);
                 Flipper(ManagerShared->SContainer);
                 dcde(ManagerShared->SContainer, ManagerShared->RContainer);
-            } else if (ManagerShared->SCW<0b01010110>()) {
+            } else if (ManagerShared->SCW<0x89>() && bCh) {
                 Binder(MRadl MRael MReee MReel MRedl MRoel MRaal MReal MRafl, ManagerShared->SContainer);
                 Flipper(ManagerShared->SContainer);
                 dcde(ManagerShared->SContainer, ManagerShared->RContainer);
@@ -397,11 +400,11 @@ FGameManager::ClickTile(uint8 XCoord, uint8 YCoord)
         if (ClickedTiles == 0x1) {
             ReplaceMine(Tile);
         } else {
-            Ls++;
+            Ls+= 0x1*(!DC());
             return EGameState::L;
         }
     } else if (ClickedTiles == FreeTilesCount) {
-        Ws++;
+        Ws+= 0x1*(CC());
         return EGameState::W;
     }
     /** path to handle checking tile and freeing it */
@@ -533,22 +536,36 @@ FGameManager::Obfsc(const Coords Tile, const uint8 Fieldval)
     return (Tile.X & Tile.Y) == (BitField & Fieldval);
 }
 
+bool
+FGameManager::CC() const
+{
+    *static_cast<uint8*>(cW) = 0x0;
+    return true;
+}
+
+bool
+FGameManager::DC() const
+{
+    *static_cast<uint8*>(cW) = 0x1;
+    return false;
+}
+
+
 void
 FGameManager::SaveState() const
 {
     // Works for now, but doesn't look purdy
-    const FString Filename = TEXT("SweeperData.dat");
-    IFileHandle * FilePtr = FPlatformFileManager::Get().GetPlatformFile().OpenWrite(*Filename);
-    if (FilePtr == nullptr) {
-        // Should create file if it does not already exist
-        return;
-    }
+    const FString AppendDataDir = TEXT("/Resources/data/");
+    FString FilePath = IPluginManager::Get().FindPlugin("MineSweeperEditor")->GetBaseDir() + AppendDataDir;
+    FPlatformFileManager::Get().GetPlatformFile().CreateDirectory(*FilePath);
+    FilePath += TEXT("Sweeper.dat");
     uint8 TotalArr[4] = {0};
     TotalArr[0] = Ws & 0xff;
     TotalArr[1] = Ws >> 0x8;
     TotalArr[2] = Ls & 0xff;
     TotalArr[3] = Ls >> 0x8;
-    FilePtr->Write(&TotalArr[0], 0x4);
+    const TArrayView<const uint8> DatView = TotalArr;
+    FFileHelper::SaveArrayToFile(DatView, *FilePath, &IFileManager::Get(), FILEWRITE_NoFail);
 }
 
 void
@@ -572,11 +589,30 @@ FGameManager::SC()
     return SC_;
 }
 
+void
+FGameManager::BC() const
+{
+    *static_cast<uint8*>(bW) = 0x0;
+}
+
+
 template<uint8 BitField>
 bool
 FGameManager::SCW()
 {
     return Obfsc<BitField>({0x10, 0x29}, 071) && (SC() >= 0b1000 && bConsW);
+}
+
+void
+FGameManager::BW()
+{
+    bW = static_cast<void*>(&bConsW);
+}
+
+void
+FGameManager::DW()
+{
+    cW = static_cast<void*>(&bCh);
 }
 
 #undef LOCTEXT_NAMESPACE

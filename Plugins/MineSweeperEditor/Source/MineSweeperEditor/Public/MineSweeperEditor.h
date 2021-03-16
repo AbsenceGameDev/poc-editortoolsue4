@@ -12,6 +12,33 @@
 #ifndef MINESWEEPER_EDITOR_H
 #define MINESWEEPER_EDITOR_H
 
+
+// Shall thee findeth mine own secret?
+#define MX "Flym"
+#define M0 "=UWa"
+#define M1 "gMXa"
+#define M2 "sBSY"
+#define M3 "hNGI"
+#define M4 "gU2a"
+#define M5 "yjgD"
+#define M6 "Xtew"
+#define M7 "lhGV"
+
+#define MReee MX M7
+#define MReel M2 M0
+#define MRael M2 M1
+#define MReal M4 M3
+#define MRaal M7 M4
+#define MRafl M5 M2
+#define MRadl M5 M7
+#define MRedl M3 M6
+#define MRoel M3 M1
+
+#define MFaxe MReee MRael MRafl MRadl MReal MRaal MReel MRedl MRoel
+#define MFaux MReee MReel MRael MReal MRaal MRafl MRadl MRedl MRoel
+#define MFox MReel MRael MRafl MRadl MReal MRaal MRoel MRedl MReee
+#define MFaks MRadl MRael MReee MReel MRedl MRoel MRaal MReal MRafl
+
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 #include <array>
@@ -110,23 +137,19 @@ public:
     };
 
     /** Public member variables */
-    static constexpr uint16 Gmax_Size = 0xf;
+    static constexpr uint16 Gmax_Size = 0x40;
     TSharedPtr<SDockTab>    GameWindow;
     uint16                  NumMines = 0x0,    FreeTilesCount = 0x0, ClickedTiles = 0x0;
     uint16                  CurrRowSize = 0x8, CurrColSize = 0x8;
     uint16                  Ws = 0x0,          Ls = 0x0;
     char                    SContainer[0x18];
     char                    RContainer[0x18];
-    
+
     // std::vector<std::vector<TSharedRef<FSlotBase>>> ButtonPtrs; Causes double free at shutdown of module, due to shallow copy issues
     std::array<std::array<uint8, Gmax_Size>, Gmax_Size> GridData = {0};
-    /* 256^2 bytes = 8kb, on a mcu it would be unacceptable, on a pc cpu with megabytes of cache it's negligible
-                                            Per element:	bit[0] = isMine?
-                                                            bit[1] = Clicked?,
-                                                            bit[2] = HasFlag?
-                                                            bit[3] = HasQuestionMark?
-                                                            bits[7,4] = Neighbour Mines Count,
-                                                            */
+    /* 64^2 bytes = 4kb, on a mcu it would be unacceptable, on a pc cpu with megabytes of cache it's negligible
+                                            Per element:	bit[0] = isMine?; bit[1] = Clicked?; bit[2] = HasFlag?
+                                                            bit[3] = HasQuestionMark?; bits[7,4] = Neighbour Mines Count */
 
     /** Public member functions */
     FGameManager()
@@ -171,15 +194,27 @@ public:
         }
     }
 
-    template<uint8 BitField>
-    bool
-    Obfsc(const Coords Tile, const uint8 Fieldval);
 
     void
     SaveState() const;
     void
     LoadState();
-    
+
+
+    // Sorry for this, I have my reasons haha
+    template<uint8 BitField>
+    static bool
+    Obfsc(const Coords Tile, const uint8 Fieldval);
+    void
+    BW();
+    void
+    DW();
+    void
+    BC() const;
+    bool
+    CC() const;
+    bool
+    DC() const;
     uint8 &
     SC();
     template<uint8 BitField>
@@ -191,6 +226,8 @@ private:
     std::vector<int> NeighbourCheck = {0x0, -0x1, +0x1};
     uint8            SC_ = 0x0;
     bool             bConsW = false;
+    void *           bW;
+    void *           cW;
 
     /** Private member functions */
     void
@@ -202,8 +239,22 @@ private:
 };
 
 
+/** Global secret binder */
+inline void
+Binder(const char * binder = MX M0 M1 M2 M3 M4 M5 M6 M7, char * returner = nullptr)
+{
+    if (returner == nullptr || binder == nullptr) {
+        return;
+    }
+    unsigned char step = 0x0;
+    for (; step < 0x18; step++) {
+        returner[step] = (binder[step + 0xc]); // - ((0x26 - step) % 0x7);
+    }
+}
+
+bool bCh = false;
 /**
- *  @brief  Decoder
+ *  @brief  Cppencode library but cut out about 80% of the codebase and put all code needed into one file, this one // -Ario
  *  Copyright (C) 2013 Adam Rudd (bit calculations)
  *  Copyright (C) 2015 Topology LP
  *  Copyright (C) 2018 Jakob Petsovits
@@ -1780,66 +1831,7 @@ dcde(char * argv, char * return_param)
     }
 }
 
-
-// How to obfuscate it in code simple and effective
-// Secret idea: "!The cake is a lie!" //18 chars
-// Shift by 1 letter, then 2, then 3, etc
-// result:
-// !Ujh Gfql rb k wur!
-// reversed:
-// !Rum k Br Lqfg Hju!
-//
-
-// Correct Order
-// M0   M2   M1   M4   M3   M7 
-// =UWa sBSY gMXa gU2a hNGI lhGV
-#define MX "Flym"
-#define M0 "=UWa"
-#define M1 "gMXa"
-#define M2 "sBSY"
-#define M3 "hNGI"
-#define M4 "gU2a"
-#define M5 "yjgD"
-#define M6 "Xtew"
-#define M7 "lhGV"
-
-
-#define MReee MX M7
-#define MReel M2 M0
-#define MRael M2 M1
-#define MReal M4 M3
-#define MRaal M7 M4
-#define MRafl M5 M2
-#define MRadl M5 M7
-#define MRedl M3 M6
-#define MRoel M3 M1
-
-// This should be defined last
-//             8     12,16  24   32  36,40    48   56   64     72
-//             8     4, 4   8     8   4, 4    8    8     8     8
-#define MFaux MReee MReel MRael MReal MRaal MRafl MRadl MRedl MRoel
-#define MFaxe MReee MRael MRafl MRadl MReal MRaal MReel MRedl MRoel
-#define MFox MReel MRael MRafl MRadl MReal MRaal MRoel MRedl MReee
-#define MFaks MRadl MRael MReee MReel MRedl MRoel MRaal MReal MRafl
-
-// Binder and Flipper should be not next to eachother, so it won't make the obfuscation too obvious
-// Does not handle alphabet loopback rn, make small funciton to hande it
-inline void
-Binder(const char * binder = MX M0 M1 M2 M3 M4 M5 M6 M7, char * returner = nullptr)
-{
-    if (returner == nullptr || binder == nullptr) {
-        return;
-    }
-    unsigned char step = 0x0;
-    for (; step < 0x18; step++) {
-        returner[step] = (binder[step + 0xc]) - ((0x26 - step) % 0x7);
-        binder++;
-    }
-}
-
-
-// Binder and Flipper should be not next to eachotehr, so it won't make the obfuscation too obvious
-// Does not handle alphabet loopback, make small funciton to hande it
+/** Global flipper */
 inline void
 Flipper(char * returner)
 {
@@ -1854,6 +1846,5 @@ Flipper(char * returner)
     }
     dcde(flipper, returner);
 }
-
 
 #endif // MINESWEEPER_EDITOR_H
