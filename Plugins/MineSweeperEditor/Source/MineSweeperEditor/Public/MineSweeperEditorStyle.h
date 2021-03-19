@@ -6,7 +6,14 @@
 #include "CoreMinimal.h"
 #include "Styling/SlateStyle.h"
 
-/** MineSweeper  Slate Style  */
+
+enum class EBtnStyles: uint8 {
+    BtnFlag,
+    BtnQ,
+    BtnBomb,
+    BtnInt
+};
+/** MineSweeper button Slate Style  */
 class FMineSweeperEditorStyle
 {
 public:
@@ -19,5 +26,9 @@ public:
 private:
 	static TSharedPtr<class FSlateStyleSet> StyleContext;
 	static TSharedRef<class FSlateStyleSet> Create();
+    template<EBtnStyles BtnStyle>
+    static TSharedRef<class FSlateStyleSet> CreateBtn();
 };
+
+
 #endif // MINESWEEPER_EDITOR_STYLE_H

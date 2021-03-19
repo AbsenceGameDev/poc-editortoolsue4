@@ -63,6 +63,7 @@ public:
     uint16 Y_INT; /** this value is displayed in SNumericEntryBox Y */
 
     TSharedPtr<FGameManager>     GameManager_;
+    //TSharedRef<class SUniformGridPanel> GridRef;
     TSharedPtr<FSlateImageBrush> FlagBrush;
     TSharedPtr<FSlateImageBrush> QuestionBrush;
     // TSharedRef<class FSlateStyleSet> FlagStyle;
