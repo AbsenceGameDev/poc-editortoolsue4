@@ -2,6 +2,7 @@
 
 #include "MineSweeperEditor.h"
 #include "MineSweeperEditorStyle.h"
+#include "SweeperTile.h"
 #include "MineSweeperEditorCommands.h"
 #include "LevelEditor.h"
 #include "Widgets/Docking/SDockTab.h"
@@ -40,9 +41,7 @@ FMineSweeperEditorModule::FMineSweeperEditorModule()
     GameManager_->SetDifficulty<FGameManager::Normal>();
     GameManager_->PlaceMines();
     GameManager_->LoadState();
-    // BuildBtnSBrush();
-    // TSharedPtr<FSlateTexture2DRHIRef> Texture = MakeShareable(new FSlateTexture2DRHIRef(16.0f, 16.0f, PF_B8G8R8A8, NULL, TexCreate_Dynamic, true));
-    // BuildBtnSBrush();
+    // InitBtnSBrush();
 }
 
 void
@@ -94,25 +93,20 @@ void
 FMineSweeperEditorModule::TabBtnClicked() const
 {
     FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeperEditorTabName);
-    // GameManager_->GameWindow = FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeperEditorTabName);
+    //GameManager_->GameWindow = FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeperEditorTabName);
 }
 
 void
-FMineSweeperEditorModule::BuildBtnSBrush()
+FMineSweeperEditorModule::InitBtnSBrush()
 {
-    FlagBrush = MakeShared<FSlateImageBrush>("../../../Resources/flag16x16", FVector2D(16, 16));
-    QuestionBrush = MakeShared<FSlateImageBrush>("../../../Resources/Q_16x16", FVector2D(16, 16));
+    const FString AppendDataDir = TEXT("/Resources/");
+    FString FilePath = IPluginManager::Get().FindPlugin("MineSweeperEditor")->GetBaseDir() + AppendDataDir;
+    FPlatformFileManager::Get().GetPlatformFile().CreateDirectory(*FilePath);
+    FilePath += TEXT("flag16x16.png");
 
-    // TSharedRef<FSlateStyleSet> Style = MakeShareable(new FSlateStyleSet("QuestionBtnStyle"));
-    // Style->SetContentRoot(
-    //     IPluginManager::Get().FindPlugin("MineSweeperEditor")->GetBaseDir() / TEXT("Resources"));
-    // Style->Set("MineSweeperEditor.WindowContext", new IMAGE_BRUSH(TEXT("Q_16x16"), {16.0f, 16.0f}));
-    // QuestionStyle = Style;
-    // TSharedRef<FSlateStyleSet> Style2 = MakeShareable(new FSlateStyleSet("QuestionBtnStyle"));
-    // Style->SetContentRoot(
-    //     IPluginManager::Get().FindPlugin("MineSweeperEditor")->GetBaseDir() / TEXT("Resources"));
-    // Style->Set("MineSweeperEditor.WindowContext", new IMAGE_BRUSH(TEXT("flag16x16"), {16.0f, 16.0f}));
-    // FlagStyle = Style;
+    FlagBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("flag16x16.png"), FVector2D(16, 16));
+    QuestionBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("q16x16.png"), FVector2D(16, 16));
+    BombBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("bomb16x16.png"), FVector2D(16, 16));
 }
 
 
@@ -196,8 +190,9 @@ TSharedRef<SUniformGridPanel>
 FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 {
     struct FSLocal {
-        static FReply OnButtonClick(Coords                          Tile,
-                                    TSharedPtr<FGameManager>        ManagerShared/*,
+        static FReply
+        OnButtonClick(Coords                   Tile,
+                      TSharedPtr<FGameManager> ManagerShared/*,
                                     TSharedPtr<TSharedRef<SWidget>> SelfRefPtr*/)
         {
             /** Open transaction to let editor know that we're about to do something */
@@ -238,6 +233,8 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
                 dcde(ManagerShared->SContainer, ManagerShared->RContainer);
             }
 
+            // static_cast<SUniformGridPanel::FSlot&>(&ManagerShared->GetGridFSlot(Tile).);
+
             // TAttribute<FSlateColor>& InColorAndOpacity{};
             //TAttribute<const FSlateBrush*>& InBorderImage{ImgBrush.Get()};
             // BtnPtr->SetBorderImage(ImgBrush.Get()); // ImgBrush ptr invalid, nullptr, causes crash, figure out why
@@ -247,37 +244,40 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
             return FReply::Handled();
         }
 
-        static TSharedRef<SWidget> MakeButton(const Coords InOffset,
-                                              TSharedPtr<FGameManager>
-                                              ManagerShared/*,
+        static TSharedRef<SWidget>
+        MakeButton(const Coords InOffset,
+                   TSharedPtr<FGameManager>
+                   ManagerShared/*,
                                               TSharedPtr<TSharedRef<SWidget>> SelfRefPtr*/)
         {
             return SNew(SButton).OnClicked_Static(&FSLocal::OnButtonClick,
                                                   InOffset,
                                                   ManagerShared/*,
                                                   SelfRefPtr*/);
+
+        //    return SNew(SSweeperTile).OnTileClick_Static(&FSLocal::OnButtonClick,
+        //                              InOffset,
+        //                              ManagerShared/*,
+        //                  SelfRefPtr*/);
         }
     };
 
     auto   IdxField = SNew(SUniformGridPanel);
     uint16 Row = 0, Col = 0;
     Coords VSend;
-    // GameManager_->ButtonPtrs.resize(YIn);
     for (Row = 0; Row < YIn;) {
         VSend.Y = Row;
         for (Col = 0; Col < XIn;) {
-            /*TSharedPtr<TSharedRef<SWidget>> SelfRefPtr;*/
             VSend.X = Col;
-            IdxField->AddSlot(Col, Row)
+            auto WidgetRef = IdxField->AddSlot(Col, Row)
             [
                 FSLocal::MakeButton(VSend, GameManager_/*, SelfRefPtr*/)
-            ];
-            // GameManager_->ButtonPtrs.at(Col).emplace_back(SlotRef);
+            ].GetWidget();
+            GameManager_->SlateGrid.emplace_back(WidgetRef);
             Col++;
         }
         Row++;
     }
-    // IdxField->GetChildren()->GetChildAt((row * colmax) - (colmax - col)) // index linearly 
     return IdxField;
 }
 
@@ -327,6 +327,18 @@ FGameManager::SetDifficulty()
         NumMines = (GridSize * 3) / 4;
     }
     FreeTilesCount = GridSize - NumMines;
+}
+
+/**
+ * @brief Get reference to specific Slate SUniformGridPanel::FSlot
+ * @param Pos Position struct, x & y coordinates
+ * How to resolve a 2d index to 1d; Row Major, so x0y0, x1y0, x2y0, ... , xny0, x0y1, x1y1, x2y1, ... , xny1,  etc..
+ *  (x + ymax*y) ?, Seems right
+ **/
+auto
+FGameManager::GetGridFSlot(Coords Pos)
+{
+    return SlateGrid.at(Pos.X + (CurrRowSize*Pos.Y));
 }
 
 void

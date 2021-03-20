@@ -44,30 +44,38 @@
 #include <array>
 #include <vector>
 
+// Forawrd declr. and function prototypes
+class FGameManager;
+struct FSlateImageBrush;
 class FToolBarBuilder;
 class FMenuBuilder;
 
+inline void
+Binder(const char * binder, char * returner);
+inline void
+Flipper(char * returner);
+inline void
+dcde(char * argv, char * return_param);
+
+// Simple type(s)
 using Coords = struct {
     uint16 X;
     uint16 Y;
 };
 
-/** Forward decls. to be used in MineSweeper function prototypes */
-class FGameManager;
-struct FSlateImageBrush;
+bool bCh = false;
+
 
 class FMineSweeperEditorModule : public IModuleInterface {
 public:
     /** Public member variables */
-    uint16 X_INT; /** this value is displayed in SNumericEntryBox X */
-    uint16 Y_INT; /** this value is displayed in SNumericEntryBox Y */
-
     TSharedPtr<FGameManager>     GameManager_;
-    //TSharedRef<class SUniformGridPanel> GridRef;
     TSharedPtr<FSlateImageBrush> FlagBrush;
     TSharedPtr<FSlateImageBrush> QuestionBrush;
-    // TSharedRef<class FSlateStyleSet> FlagStyle;
-    // TSharedRef<class FSlateStyleSet> QuestionStyle;
+    TSharedPtr<FSlateImageBrush> BombBrush;
+
+    uint16 X_INT; /** this value is displayed in SNumericEntryBox X */
+    uint16 Y_INT; /** this value is displayed in SNumericEntryBox Y */
 
     /** Public member functions */
     FMineSweeperEditorModule();
@@ -78,24 +86,32 @@ public:
     virtual void
     ShutdownModule() override;
 
-    /** This function will be bound to Command (by default it will bring up plugin window) */
+    /** @brief This function will be bound to Command (it brings up plugin window) */
     void
     TabBtnClicked() const;
+
+    /** @brief Setting the FSlateImageBrushes with actual images */
     void
-    BuildBtnSBrush();
+    InitBtnSBrush();
+
+    /**
+     * @brief Setting widgets to use brushes?
+     * @param BtnBrush, brush to set as member in widget.
+     * @param BtnRef, Ref to button to set brush in.
+     */
     void
-    SetNewBtnSBrush(FSlateBrush BtnBrush);
+    SetNewBtnSBrush(TSharedPtr<FSlateImageBrush> BtnBrush, TSharedRef<SButton> BtnRef);
 
     uint16
     GetX() const; // display this value
     uint16
     GetY() const; // display this value
+    // set value when keyboard input
     void
     CommittedX(const FText & NewText, ETextCommit::Type CommitType);
     // set value when keyboard input
     void
     CommittedY(const FText & NewText, ETextCommit::Type CommitType);
-    // set value when keyboard input
 
 private:
     /** Private member variables */
@@ -139,14 +155,13 @@ public:
 
     /** Public member variables */
     static constexpr uint16 Gmax_Size = 0x40;
-    TSharedPtr<SDockTab>    GameWindow;
     uint16                  NumMines = 0x0,    FreeTilesCount = 0x0, ClickedTiles = 0x0;
     uint16                  CurrRowSize = 0x8, CurrColSize = 0x8;
     uint16                  Ws = 0x0,          Ls = 0x0;
     char                    SContainer[0x18];
     char                    RContainer[0x18];
 
-    // std::vector<std::vector<TSharedRef<FSlotBase>>> ButtonPtrs; Causes double free at shutdown of module, due to shallow copy issues
+    std::vector<TSharedRef<SWidget>> SlateGrid; // Will hold references to actual slate buttons
     std::array<std::array<uint8, Gmax_Size>, Gmax_Size> GridData = {0};
     /* 64^2 bytes = 4kb, on a mcu it would be unacceptable, on a pc cpu with megabytes of cache it's negligible
                                             Per element:	bit[0] = isMine?; bit[1] = Clicked?; bit[2] = HasFlag?
@@ -157,14 +172,30 @@ public:
     {
     }
 
+    /**
+     * @brief Set Gameboard difficulty
+     * @tparam Difficulty Is a template parameter of enum-type EGameDifficulty 
+     */
     template<EGameDifficulty Difficulty>
     void
     SetDifficulty();
 
+    /**
+     * @brief Get reference to specific Slate SUniformGridPanel::FSlot
+     * @param Pos Position struct, x & y coordinates
+     */
+    auto
+    GetGridFSlot(Coords Pos);
+
+    /** Place mines on board (Based on set difficulty) */
     void
     PlaceMines();
+
+    /** Replace mine-tile to non-mine (To use if the first clicked tile is a mine) */
     void
     ReplaceMine(Coords Tile);
+
+    /** */
     EGameState
     ClickTile(uint8 XCoord, uint8 YCoord);
 
@@ -195,9 +226,11 @@ public:
         }
     }
 
-
+    /***/
     void
     SaveState() const;
+
+    /***/
     void
     LoadState();
 
@@ -239,7 +272,6 @@ private:
     EndGame();
 };
 
-
 /** Global secret binder */
 inline void
 Binder(const char * binder = MX M0 M1 M2 M3 M4 M5 M6 M7, char * returner = nullptr)
@@ -253,7 +285,6 @@ Binder(const char * binder = MX M0 M1 M2 M3 M4 M5 M6 M7, char * returner = nullp
     }
 }
 
-bool bCh = false;
 /**
  *  @brief  Cppencode library but cut out about 80% of the codebase and put all code needed into one file, this one // -Ario
  *  Copyright (C) 2013 Adam Rudd (bit calculations)
