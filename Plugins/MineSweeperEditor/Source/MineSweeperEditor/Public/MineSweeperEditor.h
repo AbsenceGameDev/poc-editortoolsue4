@@ -147,6 +147,17 @@ public:
                                             Per element:	bit[0] = isMine?; bit[1] = Clicked?; bit[2] = HasFlag?
                                                             bit[3] = HasQuestionMark?; bits[7,4] = Neighbour Mines Count */
 
+    // Inside Construct
+    // SNew(STextBlock).Text(this, &SMyWidget::GetText)
+ 
+    // Inside your widget class
+    FText GetText(Coords TileCoords) const
+    {
+        FText Text = FText::FromString(FString::FromInt(GetAttributes<EBitField::NeighbourMines>(TileCoords)));
+        return Text;
+    }
+
+
     /**
      * @brief Public member enums
      * 
@@ -171,7 +182,7 @@ public:
         HasQuestion = 0x3,
         NeighbourMines = 0x4,
     };
-
+    
     /**
      * @brief Public member functions
      * 
@@ -191,6 +202,13 @@ public:
     TSharedRef<SButton>
     GetGridFSlot(Coords TileCoords);
 
+    /**
+    * @brief Get reference to specific Slate Text Block
+    * @param TileCoords Position struct, x & y coordinates
+    */
+    TSharedRef<STextBlock>
+    GetTileTextBlock(Coords TileCoords);
+
 
     /**
      * @brief Click Tile
@@ -208,7 +226,7 @@ public:
      */
     template<EBitField BitField>
     uint8
-    GetAttributes(const Coords TileCoords);
+    GetAttributes(const Coords TileCoords) const;
 
     /**
      * @brief  Set FSysManager Attributes

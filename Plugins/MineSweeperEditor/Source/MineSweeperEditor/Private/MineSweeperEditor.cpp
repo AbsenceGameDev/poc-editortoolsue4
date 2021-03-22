@@ -177,6 +177,7 @@ TSharedRef<SUniformGridPanel>
 FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 {
     struct FSLocal {
+        //TAttribute<FString> Value = TAttribute<FString>::Create(TAttribute<FString>::FGetter::CreateRaw(this, &SMyWidget::getFocusedItemNameS));
         /**
          * @brief On Tile Click event
          **/
@@ -202,6 +203,9 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
             }
             auto TileWidgetPtr = ManagerShared->GetGridFSlot(TileCoords);
             TileWidgetPtr->SetEnabled(false);
+            // FString ToString = FString::FromInt(ManagerShared->GetAttributes<FSysManager::NeighbourMines>(TileCoords));
+            // ManagerShared->GetTileTextBlock(TileCoords)->SetText(FText::FromString(ToString));
+
             // TSharedPtr<FButtonStyle> BtnStyle;
             // // = &FSomeStyle::Get().GetWidgetStyle<FButtonStyle>("SomeDefaultStyle");
             // TileWidgetPtr->SetButtonStyle(BtnStyle.Get());
@@ -226,6 +230,7 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
             return FReply::Handled();
         }
 
+        // TAttribute<FString> Value = TAttribute<FString>::Create(TAttribute<FString>::FGetter::CreateRaw(this, &FSysManager::GetText));
         /**
          * @brief Make Tile
          * Make Tile and bind OnClick to it
@@ -235,14 +240,33 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
                  TSharedPtr<FSysManager>
                  ManagerShared)
         {
-
+            // I can do this directly, I need to get a pointer or reference to the GridData array and bind
+            // it to that, the thing is I am using bitfield so not sure how I'm supoosed to bind to certain bits.
+            // hmm don't want to have to create an array but I might have to.
+            //
+            // I could also make a struct with one uint8 as bitfields, and then have different fields which can be binded to!
+            // This structtype would have to replace the type in the GridData array, and I could do without the tempalte
+            // functions if I do it like this.
+            // 
+            // (GridData[TileCoords.Y][TileCoords.X] >> 4UL) & 15UL;
+            TSharedPtr<uint8> TileDataPtr = MakeShared<uint8>(
+                ManagerShared->GridData[TileCoords.Y][TileCoords.X]);
+            FString DefaultString = FString::FromInt(
+                ManagerShared->GetAttributes<FSysManager::NeighbourMines>(TileCoords));
+            auto TextBlock = SNew(STextBlock)
+                                                                .Text(FText::FromString(DefaultString))
+                                                                .ColorAndOpacity(FLinearColor(0, 0, 0, 1));
+            //.Text(FText::FromString(DefaultString))
             auto Btn =
                 SNew(SButton).OnClicked_Static(
                     &FSLocal::OnTileClick,
                     TileCoords,
                     ManagerShared).ForegroundColor(FSlateColor::UseForeground())
                 [
-                    SNew(SImage).Image(ManagerShared->BombBrush.Get())
+                    SNew(SBorder).BorderImage(ManagerShared->BombBrush.Get())
+                    [
+                        TextBlock
+                    ]
                     // SNew(SBorder)
                     // .Padding(FMargin(3))
                     // [
@@ -255,6 +279,7 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 
             Btn->SetEnabled(true);
             ManagerShared->SlateGrid.emplace_back(Btn);
+            ManagerShared->TileDisplayGrid.emplace_back(TextBlock);
             return Btn;
         }
     };
@@ -283,11 +308,11 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 TSharedRef<SDockTab>
 FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 {
-    const FText WelcomeTextl0 = LOCTEXT("WindowWidgetText",
+    const FText WelcomeTextl0 = LOCTEXT("MineSweeperPrompt0",
                                         "Welcome to MineSweeper. Win 8 matches during one session to uncover a secret!");
-    const FText WelcomeTextl1 = LOCTEXT("WindowWidgetText",
+    const FText WelcomeTextl1 = LOCTEXT("MineSweeperPrompt1",
                                         "(Win/Loss is saved, but Secret Count resets when closing the editor. Secret count is only applicable on hard or above)");
-    const FText WelcomeTextl2 = LOCTEXT("WindowWidgetText",
+    const FText WelcomeTextl2 = LOCTEXT("MineSweeperPromp2",
                                         "( Please, no cheating by looking at source code. If you do, I have tried making it hard haha.)");
     return SNew(SDockTab).TabRole(ETabRole::NomadTab)
            [
@@ -353,6 +378,12 @@ FSysManager::GetGridFSlot(Coords TileCoords)
     return SlateGrid.at(TileCoords.X + (CurrRowSize * TileCoords.Y));
 }
 
+TSharedRef<STextBlock>
+FSysManager::GetTileTextBlock(Coords TileCoords)
+{
+    return TileDisplayGrid.at(TileCoords.X + (CurrRowSize * TileCoords.Y));
+}
+
 FSysManager::EGameState
 FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
 {
@@ -386,7 +417,7 @@ FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
  */
 template<FSysManager::EBitField BitField>
 uint8
-FSysManager::GetAttributes(const Coords TileCoords)
+FSysManager::GetAttributes(const Coords TileCoords) const
 {
     if constexpr (BitField >= 0x4) {
         return (GridData[TileCoords.Y][TileCoords.X] >> 4UL) & 15UL;
