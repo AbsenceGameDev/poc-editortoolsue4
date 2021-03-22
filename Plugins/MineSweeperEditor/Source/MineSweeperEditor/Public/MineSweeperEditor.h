@@ -24,20 +24,20 @@
 #define M6 "Xtew"
 #define M7 "lhGV"
 
-#define MReee MX M7
-#define MReel M2 M0
-#define MRael M2 M1
-#define MReal M4 M3
-#define MRaal M7 M4
-#define MRafl M5 M2
-#define MRadl M5 M7
-#define MRedl M3 M6
-#define MRoel M3 M1
+#define M_REEE MX M7
+#define M_REEL M2 M0
+#define M_RAEL M2 M1
+#define M_REAL M4 M3
+#define M_RAAL M7 M4
+#define M_RAFL M5 M2
+#define M_RADL M5 M7
+#define M_REDL M3 M6
+#define M_ROEL M3 M1
 
-#define MFaxe MReee MRael MRafl MRadl MReal MRaal MReel MRedl MRoel
-#define MFaux MReee MReel MRael MReal MRaal MRafl MRadl MRedl MRoel
-#define MFox MReel MRael MRafl MRadl MReal MRaal MRoel MRedl MReee
-#define MFaks MRadl MRael MReee MReel MRedl MRoel MRaal MReal MRafl
+#define MFaxe M_REEE M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_REEL M_REDL M_ROEL
+#define MFaux M_REEE M_REEL M_RAEL M_REAL M_RAAL M_RAFL M_RADL M_REDL M_ROEL
+#define MFox M_REEL M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_ROEL M_REDL M_REEE
+#define MFaks M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL
 
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
@@ -45,8 +45,7 @@
 #include <vector>
 
 // Forawrd declr. and function prototypes
-class FGameManager;
-struct FSlateImageBrush;
+class FSysManager;
 class FToolBarBuilder;
 class FMenuBuilder;
 
@@ -69,10 +68,7 @@ bool bCh = false;
 class FMineSweeperEditorModule : public IModuleInterface {
 public:
     /** Public member variables */
-    TSharedPtr<FGameManager>     GameManager_;
-    TSharedPtr<FSlateImageBrush> FlagBrush;
-    TSharedPtr<FSlateImageBrush> QuestionBrush;
-    TSharedPtr<FSlateImageBrush> BombBrush;
+    TSharedPtr<FSysManager> SysManager;
 
     uint16 X_INT; /** this value is displayed in SNumericEntryBox X */
     uint16 Y_INT; /** this value is displayed in SNumericEntryBox Y */
@@ -89,18 +85,6 @@ public:
     /** @brief This function will be bound to Command (it brings up plugin window) */
     void
     TabBtnClicked() const;
-
-    /** @brief Setting the FSlateImageBrushes with actual images */
-    void
-    InitBtnSBrush();
-
-    /**
-     * @brief Setting widgets to use brushes?
-     * @param BtnBrush, brush to set as member in widget.
-     * @param BtnRef, Ref to button to set brush in.
-     */
-    void
-    SetNewBtnSBrush(TSharedPtr<FSlateImageBrush> BtnBrush, TSharedRef<SButton> BtnRef);
 
     uint16
     GetX() const; // display this value
@@ -129,7 +113,14 @@ private:
 };
 
 
-class FGameManager {
+// Forawrd declr. and function prototypes
+struct FSlateImageBrush;
+
+/**
+ * @brief  General resource and game manager
+ *
+ **/
+class FSysManager {
 public:
     /** Public member enums */
     enum EGameDifficulty : uint8 {
@@ -154,23 +145,29 @@ public:
     };
 
     /** Public member variables */
-    static constexpr uint16 Gmax_Size = 0x40;
-    uint16                  NumMines = 0x0,    FreeTilesCount = 0x0, ClickedTiles = 0x0;
-    uint16                  CurrRowSize = 0x8, CurrColSize = 0x8;
-    uint16                  Ws = 0x0,          Ls = 0x0;
-    char                    SContainer[0x18];
-    char                    RContainer[0x18];
+    static constexpr uint16      Gmax_Size = 0x40;
+    TSharedPtr<FSlateImageBrush> FlagBrush,              QuestionBrush,        BombBrush;
+    uint16                       NumMines = 0x0,         FreeTilesCount = 0x0, ClickedTiles = 0x0;
+    uint16                       CurrRowSize = 0x8,      CurrColSize = 0x8;
+    uint16                       Ws = 0x0,               Ls = 0x0;
+    char                         SContainer[0x18] = {0}, RContainer[0x18] = {0};
 
-    std::vector<TSharedRef<SWidget>> SlateGrid; // Will hold references to actual slate buttons
+    std::vector<TSharedRef<SButton>> SlateGrid; // Will hold references to actual slate buttons
     std::array<std::array<uint8, Gmax_Size>, Gmax_Size> GridData = {0};
     /* 64^2 bytes = 4kb, on a mcu it would be unacceptable, on a pc cpu with megabytes of cache it's negligible
                                             Per element:	bit[0] = isMine?; bit[1] = Clicked?; bit[2] = HasFlag?
                                                             bit[3] = HasQuestionMark?; bits[7,4] = Neighbour Mines Count */
+    /** @brief Setting the FSlateImageBrushes with actual images */
+    void
+    InitBtnSBrush();
 
-    /** Public member functions */
-    FGameManager()
-    {
-    }
+    /**
+     * @brief Setting widgets to use brushes?
+     * @param BtnBrush, brush to set as member in widget.
+     * @param BtnRef, Ref to button to set brush in.
+     */
+    void
+    SetNewBtnSBrush(TSharedPtr<FSlateImageBrush> BtnBrush, TSharedRef<SButton> BtnRef);
 
     /**
      * @brief Set Gameboard difficulty
@@ -184,14 +181,18 @@ public:
      * @brief Get reference to specific Slate SUniformGridPanel::FSlot
      * @param Pos Position struct, x & y coordinates
      */
-    auto
+    TSharedRef<SButton>
     GetGridFSlot(Coords Pos);
 
     /** Place mines on board (Based on set difficulty) */
     void
     PlaceMines();
 
-    /** Replace mine-tile to non-mine (To use if the first clicked tile is a mine) */
+    /**
+    * @brief Replace a given mine tile \n
+    * @param Tile Coord struct of tile to replace
+    * Call if first tile user clicks on is a mine, a common rule in minesweeper 
+    **/
     void
     ReplaceMine(Coords Tile);
 
@@ -240,28 +241,23 @@ public:
     static bool
     Obfsc(const Coords Tile, const uint8 Fieldval);
     void
-    BW();
-    void
-    DW();
-    void
-    BC() const;
+        BW(), DW(), BC() const;
     bool
-    CC() const;
-    bool
-    DC() const;
-    uint8 &
-    SC();
+        CC() const, DC() const;
     template<uint8 BitField>
     bool
     SCW();
+    uint8 &
+    SC();
+
 
 private:
     /** Private member variables */
     std::vector<int> NeighbourCheck = {0x0, -0x1, +0x1};
     uint8            SC_ = 0x0;
     bool             bConsW = false;
-    void *           bW;
-    void *           cW;
+    void *           bW = nullptr;
+    void *           cW = nullptr;
 
     /** Private member functions */
     void
@@ -270,7 +266,7 @@ private:
     SpreadStep(Coords Tile);
     void
     EndGame();
-};
+}; //
 
 /** Global secret binder */
 inline void

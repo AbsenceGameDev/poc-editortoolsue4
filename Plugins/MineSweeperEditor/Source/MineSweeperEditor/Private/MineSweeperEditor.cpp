@@ -37,10 +37,10 @@ static const FName GMineSweeperEditorTabName("MineSweeperEditor");
 FMineSweeperEditorModule::FMineSweeperEditorModule()
 {
     X_INT = Y_INT = 0;
-    GameManager_ = MakeShared<FGameManager>();
-    GameManager_->SetDifficulty<FGameManager::Normal>();
-    GameManager_->PlaceMines();
-    GameManager_->LoadState();
+    SysManager = MakeShared<FSysManager>();
+    SysManager->SetDifficulty<FSysManager::Normal>();
+    SysManager->PlaceMines();
+    SysManager->LoadState();
     // InitBtnSBrush();
 }
 
@@ -53,17 +53,17 @@ FMineSweeperEditorModule::StartupModule()
     FMineSweeperEditorCommands::Register();
 
     PluginCmds = MakeShareable(new FUICommandList);
-    GameManager_->DW();
+    SysManager->DW();
     PluginCmds->MapAction(
         FMineSweeperEditorCommands::Get().WindowContext,
         FExecuteAction::CreateRaw(this, &FMineSweeperEditorModule::TabBtnClicked),
         FCanExecuteAction()
         );
 
-    GameManager_->BW();
+    SysManager->BW();
     UToolMenus::RegisterStartupCallback(
         FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMineSweeperEditorModule::RegisterMenus));
-    GameManager_->BC();
+    SysManager->BC();
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GMineSweeperEditorTabName,
                                                       FOnSpawnTab::CreateRaw(
                                                           this,
@@ -80,7 +80,7 @@ FMineSweeperEditorModule::StartupModule()
 void
 FMineSweeperEditorModule::ShutdownModule()
 {
-    GameManager_->SaveState();
+    SysManager->SaveState();
     UToolMenus::UnRegisterStartupCallback(this);
     UToolMenus::UnregisterOwner(this);
     FMineSweeperEditorStyle::Shutdown();
@@ -93,20 +93,7 @@ void
 FMineSweeperEditorModule::TabBtnClicked() const
 {
     FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeperEditorTabName);
-    //GameManager_->GameWindow = FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeperEditorTabName);
-}
-
-void
-FMineSweeperEditorModule::InitBtnSBrush()
-{
-    const FString AppendDataDir = TEXT("/Resources/");
-    FString FilePath = IPluginManager::Get().FindPlugin("MineSweeperEditor")->GetBaseDir() + AppendDataDir;
-    FPlatformFileManager::Get().GetPlatformFile().CreateDirectory(*FilePath);
-    FilePath += TEXT("flag16x16.png");
-
-    FlagBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("flag16x16.png"), FVector2D(16, 16));
-    QuestionBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("q16x16.png"), FVector2D(16, 16));
-    BombBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("bomb16x16.png"), FVector2D(16, 16));
+    //SysManager->GameWindow = FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeperEditorTabName);
 }
 
 
@@ -191,74 +178,73 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 {
     struct FSLocal {
         static FReply
-        OnButtonClick(Coords                   Tile,
-                      TSharedPtr<FGameManager> ManagerShared/*,
-                                    TSharedPtr<TSharedRef<SWidget>> SelfRefPtr*/)
+        OnButtonClick(Coords                  Tile,
+                      TSharedPtr<FSysManager> ManagerShared)
         {
-            /** Open transaction to let editor know that we're about to do something */
-            //GEditor->BeginTransaction(LOCTEXT("MoveActorsTransactionName", "CheckNeighbors"));
-            //IdxField->GetChildren()->GetChildAt((row * colmax) - (colmax - col)) // index linearly 
-
+            /** Open transaction maybe? To let editor know that we're about to do something */
             uint8 Obfs = 0x0;
             /** Do things (Check neighbors etc) */
             switch (ManagerShared->ClickTile(Tile.X, Tile.Y)) {
-                case FGameManager::EGameState::W: Obfs = ManagerShared->Ws;
-                    ManagerShared->SC() += Obfs * (FGameManager::Obfsc<0b00111001>({0x10, 0x29}, 071));
+                case FSysManager::EGameState::W: Obfs = ManagerShared->Ws;
+                    ManagerShared->SC() += Obfs * (FSysManager::Obfsc<0b00111001>({0x10, 0x29}, 071));
                     break;
-                case FGameManager::EGameState::L: Obfs = ManagerShared->Ls;
-                    ManagerShared->SC() += Obfs * (FGameManager::Obfsc<0b00111011>({0x10, 0x29}, 071));
+                case FSysManager::EGameState::L: Obfs = ManagerShared->Ls;
+                    ManagerShared->SC() += Obfs * (FSysManager::Obfsc<0b00111011>({0x10, 0x29}, 071));
                     break;
-                case FGameManager::EGameState::P: Obfs = ManagerShared->Ws;
-                    ManagerShared->SC() += Obfs * (FGameManager::Obfsc<0b10111001>({0x10, 0x29}, 071));
+                case FSysManager::EGameState::P: Obfs = ManagerShared->Ws;
+                    ManagerShared->SC() += Obfs * (FSysManager::Obfsc<0b10111001>({0x10, 0x29}, 071));
                     break;
                 default: break;
             }
+            auto TileWidgetPtr = ManagerShared->GetGridFSlot(Tile);
+            TileWidgetPtr->SetEnabled(false);
+            // TSharedPtr<FButtonStyle> BtnStyle;
+            // // = &FSomeStyle::Get().GetWidgetStyle<FButtonStyle>("SomeDefaultStyle");
+            // TileWidgetPtr->SetButtonStyle(BtnStyle.Get());
 
             //ObfscDobfsc
             if (ManagerShared->SCW<0xc9>() && bCh) {
-                Binder(MReee MRael MRafl MRadl MReal MRaal MReel MRedl MRoel, ManagerShared->SContainer);
+                Binder(M_REEE M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_REEL M_REDL M_ROEL,
+                       ManagerShared->SContainer);
                 Flipper(ManagerShared->SContainer);
                 dcde(ManagerShared->SContainer, ManagerShared->RContainer);
             } else if (ManagerShared->SCW<0x39>() && bCh) {
-                Binder(MReee MReel MRael MReal MRaal MRafl MRadl MRedl MRoel, ManagerShared->SContainer);
+                Binder(M_REEE M_REEL M_RAEL M_REAL M_RAAL M_RAFL M_RADL M_REDL M_ROEL,
+                       ManagerShared->SContainer);
                 Flipper(ManagerShared->SContainer);
                 dcde(ManagerShared->SContainer, ManagerShared->RContainer);
             } else if (ManagerShared->SCW<0x51>() && bCh) {
-                Binder(MReel MRael MRafl MRadl MReal MRaal MRoel MRedl MReee, ManagerShared->SContainer);
+                Binder(M_REEL M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_ROEL M_REDL M_REEE,
+                       ManagerShared->SContainer);
                 Flipper(ManagerShared->SContainer);
                 dcde(ManagerShared->SContainer, ManagerShared->RContainer);
             } else if (ManagerShared->SCW<0x89>() && bCh) {
-                Binder(MRadl MRael MReee MReel MRedl MRoel MRaal MReal MRafl, ManagerShared->SContainer);
+                Binder(M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL,
+                       ManagerShared->SContainer);
                 Flipper(ManagerShared->SContainer);
                 dcde(ManagerShared->SContainer, ManagerShared->RContainer);
             }
-
-            // static_cast<SUniformGridPanel::FSlot&>(&ManagerShared->GetGridFSlot(Tile).);
-
-            // TAttribute<FSlateColor>& InColorAndOpacity{};
-            //TAttribute<const FSlateBrush*>& InBorderImage{ImgBrush.Get()};
-            // BtnPtr->SetBorderImage(ImgBrush.Get()); // ImgBrush ptr invalid, nullptr, causes crash, figure out why
-
-            /** Close transaction to let the editor know that we're done */
-            //GEditor->EndTransaction();
             return FReply::Handled();
         }
 
         static TSharedRef<SWidget>
         MakeButton(const Coords InOffset,
-                   TSharedPtr<FGameManager>
-                   ManagerShared/*,
-                                              TSharedPtr<TSharedRef<SWidget>> SelfRefPtr*/)
+                   TSharedPtr<FSysManager>
+                   ManagerShared)
         {
-            return SNew(SButton).OnClicked_Static(&FSLocal::OnButtonClick,
-                                                  InOffset,
-                                                  ManagerShared/*,
-                                                  SelfRefPtr*/);
+            auto button =
+                SNew(SButton).OnClicked_Static(
+                    &FSLocal::OnButtonClick,
+                    InOffset,
+                    ManagerShared)
+                [
+                    SNew(SImage)
+                    .Image(ManagerShared->FlagBrush.Get())
+                ];
 
-        //    return SNew(SSweeperTile).OnTileClick_Static(&FSLocal::OnButtonClick,
-        //                              InOffset,
-        //                              ManagerShared/*,
-        //                  SelfRefPtr*/);
+            button->SetEnabled(true);
+            ManagerShared->SlateGrid.emplace_back(button);
+            return button;
         }
     };
 
@@ -269,11 +255,10 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
         VSend.Y = Row;
         for (Col = 0; Col < XIn;) {
             VSend.X = Col;
-            auto WidgetRef = IdxField->AddSlot(Col, Row)
+            IdxField->AddSlot(Col, Row)
             [
-                FSLocal::MakeButton(VSend, GameManager_/*, SelfRefPtr*/)
-            ].GetWidget();
-            GameManager_->SlateGrid.emplace_back(WidgetRef);
+                FSLocal::MakeButton(VSend, SysManager)
+            ];
             Col++;
         }
         Row++;
@@ -287,33 +272,70 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 TSharedRef<SDockTab>
 FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 {
-    const FText WelcomeText = LOCTEXT("WindowWidgetText",
-                                      "Welcome to MineSweeper. Win 8 matches during one session to uncover a secret!"
-                                      "(Win/Loss is saved, but Secret Count resets when closing the editor. Secret count is only applicable on hard or above)"
-                                      "( Please, no cheating by looking at source code to find the secret haha.)");
+    const FText WelcomeTextl0 = LOCTEXT("WindowWidgetText",
+                                        "Welcome to MineSweeper. Win 8 matches during one session to uncover a secret!");
+    const FText WelcomeTextl1 = LOCTEXT("WindowWidgetText",
+                                        "(Win/Loss is saved, but Secret Count resets when closing the editor. Secret count is only applicable on hard or above)");
+    const FText WelcomeTextl2 = LOCTEXT("WindowWidgetText",
+                                        "( Please, no cheating by looking at source code. If you do, I have tried making it hard haha.)");
     return SNew(SDockTab).TabRole(ETabRole::NomadTab)
            [
                /** Put your tab contents */
                SNew(SWrapBox).PreferredWidth(300.f)
                + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
-                   SNew(STextBlock).Text(WelcomeText)
+                   SNew(STextBlock).Text(WelcomeTextl0)
                ] + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
-                   GenerateGrid(GameManager_->CurrRowSize, GameManager_->CurrColSize)
+                   SNew(STextBlock).Text(WelcomeTextl1)
+               ] + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+                   SNew(STextBlock).Text(WelcomeTextl2)
+               ] + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+                   GenerateGrid(SysManager->CurrRowSize, SysManager->CurrColSize)
                ]
            ];
 }
 
 /**
- *
- * FGameManager::  Public member functions \n\n
+ * @brief FSysManager  Public member functions \n\n
+ * @function void InitBtnSBrush() \n\n
+ * @function void SetNewBtnSBrush(BtnBrush, BtnRef) \n\n
  * @function void SetDifficulty() \n\n
  * @function void PlaceMines() \n\n
- * @function OnSpawnTab(const FSpawnTabArgs& SpawnTabArgs) const \n\n
+ * @function OnSpawnTab(SpawnTabArgs) const \n\n
  * 
  **/
-template<FGameManager::EGameDifficulty Difficulty>
+
+/** @brief Setting the FSlateImageBrushes with actual images */
 void
-FGameManager::SetDifficulty()
+FSysManager::InitBtnSBrush()
+{
+    const FString AppendDataDir = TEXT("/Resources/");
+    const FString FilePath = IPluginManager::Get().FindPlugin("MineSweeperEditor")->GetBaseDir() +
+                             AppendDataDir;
+    FPlatformFileManager::Get().GetPlatformFile().CreateDirectory(*FilePath);
+
+    FlagBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("flag16x16.png"), FVector2D(32, 32));
+    QuestionBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("q16x16.png"), FVector2D(32, 32));
+    BombBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("bomb16x16.png"), FVector2D(32, 32));
+}
+
+/**
+* @brief Setting widgets to use brushes?
+* @param BtnBrush brush to set as member in widget.
+* @param BtnRef Ref to button to set brush in.
+*/
+void
+FSysManager::SetNewBtnSBrush(TSharedPtr<FSlateImageBrush> BtnBrush, TSharedRef<SButton> BtnRef)
+{
+}
+
+
+/**
+* @brief Set Game-board difficulty
+* @tparam Difficulty Is a template parameter of enum-type EGameDifficulty 
+*/
+template<FSysManager::EGameDifficulty Difficulty>
+void
+FSysManager::SetDifficulty()
 {
     const auto GridSize = CurrRowSize * CurrColSize;
     if constexpr (Difficulty == EGameDifficulty::Easy) {
@@ -335,14 +357,14 @@ FGameManager::SetDifficulty()
  * How to resolve a 2d index to 1d; Row Major, so x0y0, x1y0, x2y0, ... , xny0, x0y1, x1y1, x2y1, ... , xny1,  etc..
  *  (x + ymax*y) ?, Seems right
  **/
-auto
-FGameManager::GetGridFSlot(Coords Pos)
+TSharedRef<SButton>
+FSysManager::GetGridFSlot(Coords Pos)
 {
-    return SlateGrid.at(Pos.X + (CurrRowSize*Pos.Y));
+    return SlateGrid.at(Pos.X + (CurrRowSize * Pos.Y));
 }
 
 void
-FGameManager::PlaceMines()
+FSysManager::PlaceMines()
 {
     const auto GridSize = CurrRowSize * CurrColSize;
 
@@ -366,7 +388,7 @@ FGameManager::PlaceMines()
  * Call if first tile user clicks on is a mine, a common rule in minesweeper 
  **/
 void
-FGameManager::ReplaceMine(Coords Tile)
+FSysManager::ReplaceMine(Coords Tile)
 {
     if (!GetAttributes<EBitField::IsMine>({Tile.X, Tile.Y})) {
         return; /** Already no mine here, function called by mistake */
@@ -384,8 +406,8 @@ FGameManager::ReplaceMine(Coords Tile)
     }
 }
 
-FGameManager::EGameState
-FGameManager::ClickTile(uint8 XCoord, uint8 YCoord)
+FSysManager::EGameState
+FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
 {
     const Coords Tile{XCoord, YCoord};
     uint8        obfs = 0x0;
@@ -421,7 +443,7 @@ FGameManager::ClickTile(uint8 XCoord, uint8 YCoord)
  **/
 
 void
-FGameManager::CheckNeighbours(const Coords TileCoords)
+FSysManager::CheckNeighbours(const Coords TileCoords)
 {
     uint8  NeighbourCountLocal = 0;
     Coords TileCoordsLocal;
@@ -440,7 +462,6 @@ FGameManager::CheckNeighbours(const Coords TileCoords)
 }
 
 /**
- *
  * @brief Spread step, takes a minesweeper tile as input and spreads out until it can't anymore
  * @param Tile, Tile to spread from
  *
@@ -449,7 +470,7 @@ FGameManager::CheckNeighbours(const Coords TileCoords)
  *       and this is the 'heaviest' function in the game-manager, might as-well make it a bit more performant
  **/
 void
-FGameManager::SpreadStep(Coords Tile)
+FSysManager::SpreadStep(Coords Tile)
 {
     // Checking for already clicked will reduce the complexity of the spread-search, as different paths won't overlap
     if (GetAttributes<EBitField::IsClicked>(Tile)) {
@@ -522,26 +543,26 @@ FGameManager::SpreadStep(Coords Tile)
 }
 
 void
-FGameManager::EndGame()
+FSysManager::EndGame()
 {
 }
 
 template<uint8 BitField>
 bool
-FGameManager::Obfsc(const Coords Tile, const uint8 Fieldval)
+FSysManager::Obfsc(const Coords Tile, const uint8 Fieldval)
 {
     return (Tile.X & Tile.Y) == (BitField & Fieldval);
 }
 
 bool
-FGameManager::CC() const
+FSysManager::CC() const
 {
     *static_cast<uint8 *>(cW) = 0x0;
     return true;
 }
 
 bool
-FGameManager::DC() const
+FSysManager::DC() const
 {
     *static_cast<uint8 *>(cW) = 0x1;
     return false;
@@ -549,7 +570,7 @@ FGameManager::DC() const
 
 
 void
-FGameManager::SaveState() const
+FSysManager::SaveState() const
 {
     // Works for now, but doesn't look purdy
     const FString AppendDataDir = TEXT("/Resources/data/");
@@ -566,7 +587,7 @@ FGameManager::SaveState() const
 }
 
 void
-FGameManager::LoadState()
+FSysManager::LoadState()
 {
     const FString Filename = TEXT("SweeperData.dat");
     IFileHandle * FilePtr = FPlatformFileManager::Get().GetPlatformFile().OpenRead(*Filename);
@@ -581,13 +602,13 @@ FGameManager::LoadState()
 }
 
 uint8 &
-FGameManager::SC()
+FSysManager::SC()
 {
     return SC_;
 }
 
 void
-FGameManager::BC() const
+FSysManager::BC() const
 {
     *static_cast<uint8 *>(bW) = 0x0;
 }
@@ -595,19 +616,19 @@ FGameManager::BC() const
 
 template<uint8 BitField>
 bool
-FGameManager::SCW()
+FSysManager::SCW()
 {
     return Obfsc<BitField>({0x10, 0x29}, 071) && (SC() >= 0b1000 && bConsW);
 }
 
 void
-FGameManager::BW()
+FSysManager::BW()
 {
     bW = static_cast<void *>(&bConsW);
 }
 
 void
-FGameManager::DW()
+FSysManager::DW()
 {
     cW = static_cast<void *>(&bCh);
 }
