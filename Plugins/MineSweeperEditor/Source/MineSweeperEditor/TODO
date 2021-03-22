@@ -1,5 +1,4 @@
 ﻿
-1b. Display number on button (To use when revealed tile has minimum 1 neighbour)
 1d. Take input from input box
 
 2a. Register RMB in Slate, (Override OnClick functions for SButton?)
@@ -17,3 +16,7 @@ this particular decoding is a simple algorithm of I think about 7 steps)
 
 3a. Secret win message is obfuscated and is read through Binder() and Flipper(), 
     which should only be called when 5 wins during one session has been achieved.
+    
+1b. Display number on button (To use when revealed tile has minimum 1 neighbour)
+
+1e. Using SetText retroactively should still work as normal according to other, (Fixed, issue was order of access)

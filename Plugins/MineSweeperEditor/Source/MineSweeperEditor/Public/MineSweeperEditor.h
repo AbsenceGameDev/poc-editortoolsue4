@@ -143,17 +143,21 @@ public:
     std::vector<TSharedRef<SButton>> SlateGrid; /** Holds references to actual slate buttons */
     std::vector<TSharedRef<STextBlock>> TileDisplayGrid; /** Holds textblock refs for neighbour-count */
     std::array<std::array<uint8, Gmax_Size>, Gmax_Size> GridData = {0};
+    // std::array<std::array<SBitField, Gmax_Size>, Gmax_Size> GridSBitFieldData = {0};
     /* 64^2 bytes = 4kb, on a mcu it would be unacceptable, on a pc cpu with megabytes of cache it's negligible
                                             Per element:	bit[0] = isMine?; bit[1] = Clicked?; bit[2] = HasFlag?
                                                             bit[3] = HasQuestionMark?; bits[7,4] = Neighbour Mines Count */
 
+
     // Inside Construct
     // SNew(STextBlock).Text(this, &SMyWidget::GetText)
- 
+
     // Inside your widget class
-    FText GetText(Coords TileCoords) const
+    FText
+    GetText(Coords TileCoords) const
     {
-        FText Text = FText::FromString(FString::FromInt(GetAttributes<EBitField::NeighbourMines>(TileCoords)));
+        FText Text =
+            FText::FromString(FString::FromInt(GetAttributes<EBitField::NeighbourMines>(TileCoords)));
         return Text;
     }
 
@@ -182,7 +186,7 @@ public:
         HasQuestion = 0x3,
         NeighbourMines = 0x4,
     };
-    
+
     /**
      * @brief Public member functions
      * 
@@ -319,7 +323,7 @@ private:
 /** Secret class, kindly ignore this :) */
 class FObfuscator {
 public:
-    
+
     // Sorry for this naming, I have my reasons haha
     template<uint8 BitField>
     static bool
@@ -334,45 +338,44 @@ public:
     uint8 &
     SC();
 
-    inline void
-    Binder(const char * binder = MX M0 M1 M2 M3 M4 M5 M6 M7, char * returner = nullptr)
+    static inline void
+    Binder(const char * BinderVar = MX M0 M1 M2 M3 M4 M5 M6 M7, char * Returner = nullptr)
     {
-        if (returner == nullptr || binder == nullptr) {
+        if (Returner == nullptr || BinderVar == nullptr) {
             return;
         }
         unsigned char step = 0x0;
         for (; step < 0x18; step++) {
-            returner[step] = (binder[step + 0xc]); // - ((0x26 - step) % 0x7);
+            Returner[step] = (BinderVar[step + 0xc]); // - ((0x26 - step) % 0x7);
         }
     }
 
     // Decode
-    inline
-    void
-    dcde(char * argv, char * return_param)
+    static inline void
+    Dcde(char * Argv, char * ReturnParam)
     {
-        size_t        arglen = strlen(argv);
-        char *        dcded_param = "temp string"; // = base64::decode<std::string>(argv,arglen).c_str();
-        unsigned char step = 0x0;
-        for (; step < 0x18; step++) {
-            return_param[step] = dcded_param[step];
+        // size_t        Arglen = strlen(Argv);
+        char *        DcdedParam = "temp string"; // = base64::decode<std::string>(argv,arglen).c_str();
+        unsigned char Step = 0x0;
+        for (; Step < 0x18; Step++) {
+            ReturnParam[Step] = DcdedParam[Step];
         }
     }
 
     /** Global flipper */
-    inline void
-    Flipper(char * returner)
+    static inline void
+    Flipper(char * Returner)
     {
-        if (returner == nullptr) {
+        if (Returner == nullptr) {
             return;
         }
-        char          flipper[0x20];
-        unsigned char step = 0x0;
-        for (; step < 0x18;) {
-            flipper[step] = returner[(0x19 - step)];
-            step++;
+        char          Flipper[0x20];
+        unsigned char Step = 0x0;
+        for (; Step < 0x18;) {
+            Flipper[Step] = Returner[(0x19 - Step)];
+            Step++;
         }
-        dcde(flipper, returner);
+        Dcde(Flipper, Returner);
     }
 
 private:

@@ -42,4 +42,13 @@ using Coords = struct {
     uint16 Y;
 };
 
+using SBitField = struct {
+    uint8
+        IsMine:1,
+        IsClicked:1,
+        HasFlag:1,
+        HasQ:1,
+        NeighbourMinesCount:3;
+};
+
 #endif // MINESECRET_H
