@@ -201,7 +201,8 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
                     break;
                 default: break;
             }
-            FString ToString = FString::FromInt(ManagerShared->GetAttributes<FSysManager::NeighbourMines>(TileCoords));
+            FString ToString = FString::FromInt(
+                ManagerShared->GetAttributes<FSysManager::NeighbourMines>(TileCoords));
             ManagerShared->GetTileTextBlock(TileCoords)->SetText(FText::FromString(ToString));
             auto TileWidgetPtr = ManagerShared->GetGridFSlot(TileCoords);
             TileWidgetPtr->SetEnabled(false);
@@ -240,16 +241,6 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
                  TSharedPtr<FSysManager>
                  ManagerShared)
         {
-            // I can do this directly, I need to get a pointer or reference to the GridData array and bind
-            // it to that, the thing is I am using a fake bitfield so not sure how I'm supoosed to bind to certain bits.
-            // hmm don't want to have to create an array but I might have to.
-            //
-            // Hmm ok a struct with a regular bitfield won't do, I'll have to work with my already written code with my fake bitfield.
-            // Atleast it can ensure values are correct.
-            //
-            // I could write a function pointer and I would need to bind the pointer to GetAttributes<>() with the field EBitField::NeighourCount
-            // 
-            // (GridData[TileCoords.Y][TileCoords.X] >> 4UL) & 15UL;
             TSharedPtr<uint8> TileDataPtr = MakeShared<uint8>(
                 ManagerShared->GridData[TileCoords.Y][TileCoords.X]);
             FString DefaultString = FString::FromInt(
@@ -268,14 +259,6 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
                     [
                         TextBlock
                     ]
-                    // SNew(SBorder)
-                    // .Padding(FMargin(3))
-                    // [
-                    //     SNew(STextBlock)
-                    //     // Text(TEXT("0"))
-                    //     //.Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"),16))
-                    //     //.ColorAndOpacity(FLinearColor(1, 0, 1, 1))
-                    // ]
                 ];
 
             Btn->SetEnabled(true);
@@ -367,6 +350,19 @@ FSysManager::InitBtnSBrush()
     BombBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("bomb16x16.png"), FVector2D(32, 32));
 }
 
+/**
+* Refresh Tiles
+**/
+
+void
+FSysManager::RefreshTiles(Coords TileCoords)
+{
+    FText DefaultText = FText::FromString(FString::FromInt(
+        GetAttributes<FSysManager::NeighbourMines>(TileCoords)));
+    GetTileTextBlock(TileCoords)->SetText(DefaultText);
+    GetGridFSlot(TileCoords)->SetEnabled(false);
+}
+
 /*
  * Get reference to specific Slate SUniformGridPanel::FSlot
  * How to resolve a 2d index to 1d;
@@ -410,6 +406,16 @@ FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
     }
     /** path to handle checking tile and freeing it */
     SpreadStep(TileCoords);
+
+    uint16_t Idx1d = 0x0;
+    for (auto & TileRow : GridData) {
+        for (auto & TileData : TileRow) {
+            if ((TileData >> EBitField::IsClicked) & 1UL) {
+                SlateGrid[Idx1d]->SetEnabled(false);
+            }
+        }
+        Idx1d += 1;
+    }
     return EGameState::P;
 }
 
@@ -424,31 +430,8 @@ FSysManager::GetAttributes(const Coords TileCoords) const
         return (GridData[TileCoords.Y][TileCoords.X] >> 4UL) & 15UL;
     } else {
         return (GridData[TileCoords.Y][TileCoords.X] >> BitField) & 1UL;
-    }    
+    }
 }
-
-
-/*
-* Get FSysManager Attributes
-*/
-//template<FSysManager::EBitField BitField>
-//uint8
-//FSysManager::GetAttributes(const Coords TileCoords) const
-//{
-//    auto & Tileptr = GridSBitFieldData[TileCoords.Y][TileCoords.X];
-//    if constexpr (BitField == EBitField::NeighbourMines) {
-//        return Tileptr.NeighbourMinesCount;
-//    }    if constexpr (BitField == EBitField::HasFlag) {
-//        return Tileptr.HasFlag;
-//    }    if constexpr (BitField == EBitField::HasQuestion) {
-//        return Tileptr.HasQ;
-//    }    if constexpr (BitField == EBitField::IsClicked) {
-//        return Tileptr.IsClicked;
-//    }    if constexpr (BitField == EBitField::IsMine) {
-//        return Tileptr.IsMine;
-//    }
-//    return 0x0;
-//}
 
 /*
  * Set FSysManager Attributes
@@ -467,29 +450,6 @@ FSysManager::SetAttributes(const Coords TileCoords, const uint8 Fieldval)
         TileData = (TileData & ~(1UL << BitField)) | ((Fieldval & 1UL) << BitField);
     }
 }
-
-
-/*
-* Set FSysManager Attributes
-*/
-// template<FSysManager::EBitField BitField>
-// void
-// FSysManager::SetAttributes(const Coords TileCoords, const uint8 Fieldval)
-// {
-//     auto & TileData = GridSBitFieldData[TileCoords.Y][TileCoords.X];
-//     if constexpr (BitField == EBitField::NeighbourMines) {
-//         TileData.NeighbourMinesCount = Fieldval;
-//     } else if constexpr (BitField == EBitField::IsMine) {
-//         TileData.IsMine = Fieldval;
-//     } else if constexpr (BitField == EBitField::HasFlag) {
-//         TileData.HasFlag = Fieldval;
-//     } else if constexpr (BitField == EBitField::HasQuestion) {
-//         TileData.HasQ = Fieldval;
-//     } else if constexpr (BitField == EBitField::IsClicked) {
-//         TileData.IsClicked = Fieldval;
-//     }
-// }
-
 
 /*
  * Save session scores

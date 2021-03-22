@@ -200,6 +200,12 @@ public:
     InitBtnSBrush();
 
     /**
+     * @brief Refresh Tiles
+     *
+     **/
+    void RefreshTiles(Coords TileCoords);
+
+    /**
      * @brief Get reference to specific Slate SUniformGridPanel::FSlot
      * @param TileCoords Position struct, x & y coordinates
      */

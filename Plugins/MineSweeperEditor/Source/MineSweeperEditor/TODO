@@ -1,4 +1,8 @@
-﻿
+﻿0a. Noticed that the GridData and the GridPanel buttons array is not synced in their indices.
+    Same length but the vectors internal memory management seems to be jumbling around the vectors indices  
+   
+0b. Finish investigating the Access Violation on SpreadStep, seems to be index becomes offset and goes outside of bounds, but not sure yet.   
+   
 1d. Take input from input box
 
 2a. Register RMB in Slate, (Override OnClick functions for SButton?)
