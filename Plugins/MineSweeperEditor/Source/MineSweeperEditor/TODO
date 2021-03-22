@@ -6,7 +6,7 @@
 2b. Display QuestionBrush or FlagBrush when RMB is pressed (toggle)
  
     
-==================== DONE ===================== (This is not representative of everything, only of more important objectives)
+==================== DONE ===================== (This is not representative of everything, it is mostly more important objectives)
 0a. Store Total wins/losses in saved filed (Done but haven't been tested)
 1a. Fetch Correct child-slot from SDockTab (ownership chain -> SDockTab:SWrapBox:SUniformGridPanel:Button[y][x])  
 1c. Set revealed tile as clicked.

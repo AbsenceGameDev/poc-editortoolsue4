@@ -409,17 +409,20 @@ FSysManager::ReplaceMine(Coords Tile)
 FSysManager::EGameState
 FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
 {
-    const Coords Tile{XCoord, YCoord};
+    const Coords TileCoords{XCoord, YCoord};
     uint8        obfs = 0x0;
     ClickedTiles++;
 
     /** If clicked on Mine */
-    if (GetAttributes<EBitField::IsMine>(Tile)) {
+    if (GetAttributes<EBitField::IsMine>(TileCoords)) {
         /** If first tile is clicked */
         if (ClickedTiles == 0x1) {
-            ReplaceMine(Tile);
+            ReplaceMine(TileCoords);
         } else {
             Ls += 0x1 * (!DC());
+            for (auto & TileWidget : SlateGrid) {
+                TileWidget.Get().SetEnabled(false);
+            }
             return EGameState::L;
         }
     } else if (ClickedTiles == FreeTilesCount) {
@@ -427,7 +430,7 @@ FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
         return EGameState::W;
     }
     /** path to handle checking tile and freeing it */
-    SpreadStep(Tile);
+    SpreadStep(TileCoords);
     return EGameState::P;
 }
 
