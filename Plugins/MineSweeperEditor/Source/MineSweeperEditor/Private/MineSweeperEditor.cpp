@@ -20,14 +20,11 @@ static const FName GMineSweeperEditorTabName("MineSweeperEditor");
 #define LOCTEXT_NAMESPACE "MineSweeperEditorModule"
 
 /**
-*
-* FMineSweeperEditorModule::  Public member functions
+* 
+* @brief FMineSweeperEditorModule::  Public member functions
 * @function FMineSweeperEditorModule()
-* @function void StartupModule()
-* @function void ShutdownModule()
-* @function void TabBtnClicked()const
-* @function uint16 GetX()const
-* @function uint16 GetY()const
+* @function void StartupModule(), ShutdownModule(), TabBtnClicked() const
+* @function uint16 GetX() const, GetY() const
 * @function void CommittedX(const FText& NewText, ETextCommit::Type CommitType)
 * @function void CommittedY(const FText& NewText, ETextCommit::Type CommitType)
 * 
@@ -37,10 +34,7 @@ FMineSweeperEditorModule::FMineSweeperEditorModule()
 {
     X_INT = Y_INT = 0;
     SysManager = MakeShared<FSysManager>();
-    SysManager->SetDifficulty<FSysManager::Normal>();
-    SysManager->PlaceMines();
     SysManager->LoadState();
-    // InitBtnSBrush();
 }
 
 void
@@ -87,7 +81,6 @@ FMineSweeperEditorModule::ShutdownModule()
     FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(GMineSweeperEditorTabName);
 }
 
-
 void
 FMineSweeperEditorModule::TabBtnClicked() const
 {
@@ -127,13 +120,13 @@ FMineSweeperEditorModule::CommittedY(const FText &     NewText,
 }
 
 /**
-*
-* FMineSweeperEditorModule::  Private member functions \n\n
-* @function void RegisterMenus() \n\n
-* @function TSharedRef<SUniformGridPanel> GenerateGrid(uint8 XIn, uint8 YIn) const \n\n
-* @function TSharedRef<SDockTab> OnSpawnTab(const FSpawnTabArgs& SpawnTabArgs) const \n\n
-* 
-*/
+ *
+ * @brief FMineSweeperEditorModule::  Private member functions 
+ * @function void RegisterMenus() 
+ * @function TSharedRef<SUniformGridPanel> GenerateGrid(uint8, uint8) const 
+ * @function TSharedRef<SDockTab> OnSpawnTab(const FSpawnTabArgs&) const
+ *
+ **/
 
 /**
 * @brief Register level editor menu
@@ -165,20 +158,24 @@ FMineSweeperEditorModule::RegisterMenus()
 }
 
 /**
- * @brief Generate Slate Grid \n
- * Move FSLocal struct into the GridManager, and also add a ref to the grid manager as input param to this function.
- * That way, if I decide to let the user create multiple windows we dont get any problems
+ * @brief Generate Slate Grid 
  * @param XIn Grid Row Size
  * @param YIn Grid Column Size
+ * @note FSLocal - Local container to create and bind function \n
+ * FSLocal::OnTileClick(const Coords, TSharedPtr<FSysManager>) \n
+ * FSLocal::MakeTile(const Coords, TSharedPtr<FSysManager>)
  * @return Shared reference of Grid panel, type: TSharedRef<SUniformGridPanel>
  **/
 TSharedRef<SUniformGridPanel>
 FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 {
     struct FSLocal {
+        /**
+         * @brief On Tile Click event
+         **/
         static FReply
-        OnButtonClick(Coords                  TileCoords,
-                      TSharedPtr<FSysManager> ManagerShared)
+        OnTileClick(Coords                  TileCoords,
+                    TSharedPtr<FSysManager> ManagerShared)
         {
             /** Open transaction maybe? To let editor know that we're about to do something */
             uint8 Obfs = 0x0;
@@ -226,24 +223,39 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
             return FReply::Handled();
         }
 
+        /**
+         * @brief Make Tile
+         * Make Tile and bind OnClick to it
+         **/
         static TSharedRef<SWidget>
-        MakeButton(const Coords TileCoords,
-                   TSharedPtr<FSysManager>
-                   ManagerShared)
+        MakeTile(const Coords TileCoords,
+                 TSharedPtr<FSysManager>
+                 ManagerShared)
         {
-            auto button =
+            // TSharedRef<STextBlock> BtnText;
+            // TSharedRef<SButton> Btn;
+            // SAssignNew(Btn, SButton).OnClicked_Static(
+
+            auto Btn =
                 SNew(SButton).OnClicked_Static(
-                    &FSLocal::OnButtonClick,
+                    &FSLocal::OnTileClick,
                     TileCoords,
-                    ManagerShared)
+                    ManagerShared).ForegroundColor(FSlateColor::UseForeground())
                 [
-                    SNew(SImage)
-                    .Image(ManagerShared->FlagBrush.Get())
+                    SNew(SImage).Image(ManagerShared->BombBrush.Get())
+                    // SNew(SBorder)
+                    // .Padding(FMargin(3))
+                    // [
+                    //     SNew(STextBlock)
+                    //     // Text(TEXT("0"))
+                    //     //.Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"),16))
+                    //     //.ColorAndOpacity(FLinearColor(1, 0, 1, 1))
+                    // ]
                 ];
 
-            button->SetEnabled(true);
-            ManagerShared->SlateGrid.emplace_back(button);
-            return button;
+            Btn->SetEnabled(true);
+            ManagerShared->SlateGrid.emplace_back(Btn);
+            return Btn;
         }
     };
 
@@ -256,7 +268,7 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
             TileCoords.X = Col;
             IdxField->AddSlot(Col, Row)
             [
-                FSLocal::MakeButton(TileCoords, SysManager)
+                FSLocal::MakeTile(TileCoords, SysManager)
             ];
             Col++;
         }
@@ -294,14 +306,23 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 }
 
 /**
- * @brief FSysManager  Public member functions \n\n
- * @function void InitBtnSBrush() \n\n
- * @function void SetNewBtnSBrush(BtnBrush, BtnRef) \n\n
- * @function void SetDifficulty() \n\n
- * @function void PlaceMines() \n\n
- * @function OnSpawnTab(SpawnTabArgs) const \n\n
+ *
+ * @brief FSysManager::  Public member functions 
+ * @function void FSysManager() 
+ * @function void InitBtnSBrush() 
+ * @function TSharedRef<SButton> GetGridFSlot(Coords)
+ * @function FSysManager::EGameState ClickTile(uint8, uint8)
+*  @function void SaveState() 
+* @function void LoadState() 
  * 
  **/
+
+FSysManager::FSysManager()
+{
+    InitBtnSBrush();
+    SetDifficulty<FSysManager::Normal>();
+    PlaceMines();
+}
 
 /** @brief Setting the FSlateImageBrushes with actual images */
 void
@@ -318,39 +339,6 @@ FSysManager::InitBtnSBrush()
 }
 
 /**
-* @brief Setting widgets to use brushes?
-* @param BtnBrush brush to set as member in widget.
-* @param BtnRef Ref to button to set brush in.
-*/
-void
-FSysManager::SetNewBtnSBrush(TSharedPtr<FSlateImageBrush> BtnBrush, TSharedRef<SButton> BtnRef)
-{
-}
-
-
-/**
-* @brief Set Game-board difficulty
-* @tparam Difficulty Is a template parameter of enum-type EGameDifficulty 
-*/
-template<FSysManager::EGameDifficulty Difficulty>
-void
-FSysManager::SetDifficulty()
-{
-    const auto GridSize = CurrRowSize * CurrColSize;
-    if constexpr (Difficulty == EGameDifficulty::Easy) {
-        NumMines = GridSize / 6;
-    } else if constexpr (Difficulty == EGameDifficulty::Normal) {
-        NumMines = GridSize / 3;
-    } else if constexpr (Difficulty == EGameDifficulty::Hard) {
-        NumMines = GridSize / 2;
-    } else {
-        // Insane
-        NumMines = (GridSize * 3) / 4;
-    }
-    FreeTilesCount = GridSize - NumMines;
-}
-
-/**
  * @brief Get reference to specific Slate SUniformGridPanel::FSlot
  * @param Pos Position struct, x & y coordinates
  * How to resolve a 2d index to 1d; Row Major, so x0y0, x1y0, x2y0, ... , xny0, x0y1, x1y1, x2y1, ... , xny1,  etc..
@@ -360,26 +348,6 @@ TSharedRef<SButton>
 FSysManager::GetGridFSlot(Coords TileCoords)
 {
     return SlateGrid.at(TileCoords.X + (CurrRowSize * TileCoords.Y));
-}
-
-void
-FSysManager::PlaceMines()
-{
-    const auto GridSize = CurrRowSize * CurrColSize;
-
-    /** Continue until all random mines have been created. */
-    for (int PlacedCount = 0; PlacedCount < NumMines;) {
-        const auto   Random = FMath::RandRange(0x0, GridSize);
-        const uint16 X = Random / CurrRowSize;
-        const uint16 Y = Random % CurrColSize;
-
-        /** Add the mine if no mine is placed at this position on the board */
-        if (!GetAttributes<EBitField::IsMine>({X, Y})) {
-            SetAttributes<EBitField::IsMine>({X, Y}, 0x1);
-            PlacedCount++;
-        }
-    }
-    return; // symbolic
 }
 
 /**
@@ -433,16 +401,117 @@ FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
     return EGameState::P;
 }
 
+
+template<FSysManager::EBitField BitField>
+uint8
+FSysManager::GetAttributes(const Coords TileCoords)
+{
+    if constexpr (BitField >= 0x4) {
+        return (GridData[TileCoords.Y][TileCoords.X] >> 4UL) & 15UL;
+    } else {
+        return (GridData[TileCoords.Y][TileCoords.X] >> BitField) & 1UL;
+    }
+}
+
+template<FSysManager::EBitField BitField>
+void
+FSysManager::SetAttributes(const Coords TileCoords, const uint8 Fieldval)
+{
+    auto & TileData = GridData[TileCoords.Y][TileCoords.X];
+    if constexpr (BitField == EBitField::NeighbourMines) {
+        TileData = (TileData & ~(15UL << BitField)) | ((Fieldval & 1UL) << BitField);
+    }
+    if constexpr (BitField == EBitField::IsMine) {
+        TileData = (TileData & ~1UL) | (Fieldval & 1UL);
+    } else {
+        TileData = (TileData & ~(1UL << BitField)) | ((Fieldval & 1UL) << BitField);
+    }
+}
+
+void
+FSysManager::SaveState() const
+{
+    // Works for now, but doesn't look purdy
+    const FString AppendDataDir = TEXT("/Resources/data/");
+    FString FilePath = IPluginManager::Get().FindPlugin("MineSweeperEditor")->GetBaseDir() + AppendDataDir;
+    FPlatformFileManager::Get().GetPlatformFile().CreateDirectory(*FilePath);
+    FilePath += TEXT("Sweeper.dat");
+    uint8 TotalArr[4] = {0};
+    TotalArr[0] = Ws & 0xff;
+    TotalArr[1] = Ws >> 0x8;
+    TotalArr[2] = Ls & 0xff;
+    TotalArr[3] = Ls >> 0x8;
+    const TArrayView<const uint8> DatView = TotalArr;
+    FFileHelper::SaveArrayToFile(DatView, *FilePath, &IFileManager::Get(), FILEWRITE_NoFail);
+}
+
+void
+FSysManager::LoadState()
+{
+    const FString Filename = TEXT("SweeperData.dat");
+    IFileHandle * FilePtr = FPlatformFileManager::Get().GetPlatformFile().OpenRead(*Filename);
+    if (FilePtr == nullptr) {
+        // Should create file if it does not already exist
+        return;
+    }
+    uint8 TotalArr[4] = {0};
+    FilePtr->Read(&TotalArr[0x0], 0x4);
+    Ws = (TotalArr[0] << 0x8) | TotalArr[1];
+    Ls = (TotalArr[2] << 0x8) | TotalArr[3];
+}
+
 /**
  * 
- * FGameManager::  Private member functions \n\n
- * @function void CheckNeighbours(const Coords TileCoords) \n
- * @function void FGameManager::UpdateBoard() \n
- * @function void EndGame() \n
- * @function void SaveState() \n
- * @function void LoadState() \n
+ * FSysManager::  Private member functions 
+ * @function void SetDifficulty<FSysManager::EGameDifficulty>() 
+ * @function void PlaceMines() 
+ * @function void CheckNeighbours(const Coords) 
+ * @function void SpreadStep(Coords) 
+ * @function void ResetGame() 
  * 
  **/
+
+/**
+* @brief Set Game-board difficulty
+* @tparam Difficulty Type parameter of enum-type EGameDifficulty 
+*/
+template<FSysManager::EGameDifficulty Difficulty>
+void
+FSysManager::SetDifficulty()
+{
+    const auto GridSize = CurrRowSize * CurrColSize;
+    if constexpr (Difficulty == EGameDifficulty::Easy) {
+        NumMines = GridSize / 6;
+    } else if constexpr (Difficulty == EGameDifficulty::Normal) {
+        NumMines = GridSize / 3;
+    } else if constexpr (Difficulty == EGameDifficulty::Hard) {
+        NumMines = GridSize / 2;
+    } else {
+        // Insane
+        NumMines = (GridSize * 3) / 4;
+    }
+    FreeTilesCount = GridSize - NumMines;
+}
+
+void
+FSysManager::PlaceMines()
+{
+    const auto GridSize = CurrRowSize * CurrColSize;
+
+    /** Continue until all random mines have been created. */
+    for (int PlacedCount = 0; PlacedCount < NumMines;) {
+        const auto   Random = FMath::RandRange(0x0, GridSize);
+        const uint16 X = Random / CurrRowSize;
+        const uint16 Y = Random % CurrColSize;
+
+        /** Add the mine if no mine is placed at this position on the board */
+        if (!GetAttributes<EBitField::IsMine>({X, Y})) {
+            SetAttributes<EBitField::IsMine>({X, Y}, 0x1);
+            PlacedCount++;
+        }
+    }
+    return; // symbolic
+}
 
 void
 FSysManager::CheckNeighbours(const Coords TileCoords)
@@ -544,11 +613,6 @@ FSysManager::SpreadStep(Coords TileCoords)
     }
 }
 
-void
-FSysManager::EndGame()
-{
-}
-
 template<uint8 BitField>
 bool
 FSysManager::Obfsc(const Coords TileCoords, const uint8 Fieldval)
@@ -568,39 +632,6 @@ FSysManager::DC() const
 {
     *static_cast<uint8 *>(cW) = 0x1;
     return false;
-}
-
-
-void
-FSysManager::SaveState() const
-{
-    // Works for now, but doesn't look purdy
-    const FString AppendDataDir = TEXT("/Resources/data/");
-    FString FilePath = IPluginManager::Get().FindPlugin("MineSweeperEditor")->GetBaseDir() + AppendDataDir;
-    FPlatformFileManager::Get().GetPlatformFile().CreateDirectory(*FilePath);
-    FilePath += TEXT("Sweeper.dat");
-    uint8 TotalArr[4] = {0};
-    TotalArr[0] = Ws & 0xff;
-    TotalArr[1] = Ws >> 0x8;
-    TotalArr[2] = Ls & 0xff;
-    TotalArr[3] = Ls >> 0x8;
-    const TArrayView<const uint8> DatView = TotalArr;
-    FFileHelper::SaveArrayToFile(DatView, *FilePath, &IFileManager::Get(), FILEWRITE_NoFail);
-}
-
-void
-FSysManager::LoadState()
-{
-    const FString Filename = TEXT("SweeperData.dat");
-    IFileHandle * FilePtr = FPlatformFileManager::Get().GetPlatformFile().OpenRead(*Filename);
-    if (FilePtr == nullptr) {
-        // Should create file if it does not already exist
-        return;
-    }
-    uint8 TotalArr[4] = {0};
-    FilePtr->Read(&TotalArr[0x0], 0x4);
-    Ws = (TotalArr[0] << 0x8) | TotalArr[1];
-    Ls = (TotalArr[2] << 0x8) | TotalArr[3];
 }
 
 uint8 &
@@ -633,6 +664,12 @@ void
 FSysManager::DW()
 {
     cW = static_cast<void *>(&bCh);
+}
+
+
+void
+FSysManager::ResetGame()
+{
 }
 
 #undef LOCTEXT_NAMESPACE

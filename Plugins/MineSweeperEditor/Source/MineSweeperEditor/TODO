@@ -4,6 +4,10 @@
 
 2a. Register RMB in Slate, (Override OnClick functions for SButton?)
 2b. Display QuestionBrush or FlagBrush when RMB is pressed (toggle)
+
+3b. Create own decoder and ditch cppencode 
+(Already ditched cppencode, now only need to make own decoder in the dcde function, 
+this particular decoding is a simple algorithm of I think about 7 steps)
  
     
 ==================== DONE ===================== (This is not representative of everything, it is mostly more important objectives)
