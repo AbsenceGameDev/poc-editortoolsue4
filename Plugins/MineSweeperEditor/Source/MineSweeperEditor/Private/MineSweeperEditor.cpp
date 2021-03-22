@@ -37,6 +37,9 @@ FMineSweeperEditorModule::FMineSweeperEditorModule()
     SysManager->LoadState();
 }
 
+/*
+* Call when loading module.
+*/
 void
 FMineSweeperEditorModule::StartupModule()
 {
@@ -46,17 +49,17 @@ FMineSweeperEditorModule::StartupModule()
     FMineSweeperEditorCommands::Register();
 
     PluginCmds = MakeShareable(new FUICommandList);
-    SysManager->DW();
+    SysManager->Obfsctr->DW();
     PluginCmds->MapAction(
         FMineSweeperEditorCommands::Get().WindowContext,
         FExecuteAction::CreateRaw(this, &FMineSweeperEditorModule::TabBtnClicked),
         FCanExecuteAction()
         );
 
-    SysManager->BW();
+    SysManager->Obfsctr->BW();
     UToolMenus::RegisterStartupCallback(
         FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMineSweeperEditorModule::RegisterMenus));
-    SysManager->BC();
+    SysManager->Obfsctr->BC();
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GMineSweeperEditorTabName,
                                                       FOnSpawnTab::CreateRaw(
                                                           this,
@@ -67,9 +70,9 @@ FMineSweeperEditorModule::StartupModule()
                             .SetMenuType(ETabSpawnerMenuType::Hidden);
 }
 
-/**
-  * @brief Call during shutdown or unload to clean up the module.
-  **/
+/*
+ * Call during shutdown or unload to clean up the module.
+ */
 void
 FMineSweeperEditorModule::ShutdownModule()
 {
@@ -81,29 +84,37 @@ FMineSweeperEditorModule::ShutdownModule()
     FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(GMineSweeperEditorTabName);
 }
 
+/*
+ *  Brings up main plugin window
+ */
 void
 FMineSweeperEditorModule::TabBtnClicked() const
 {
     FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeperEditorTabName);
-    //SysManager->GameWindow = FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeperEditorTabName);
 }
 
 
-// get value to display in SNumericEntryBox
+/*
+ * get value to display in SNumericEntryBox
+ */
 uint16
 FMineSweeperEditorModule::GetX() const
 {
     return X_INT;
 }
 
-// get value to display in SNumericEntryBox
+/*
+ * get value to display in SNumericEntryBox
+ */
 uint16
 FMineSweeperEditorModule::GetY() const
 {
     return Y_INT;
 }
 
-// Set Value
+/*
+ * Set Value
+ */
 void
 FMineSweeperEditorModule::CommittedX(const FText &     NewText,
                                      ETextCommit::Type CommitType)
@@ -111,7 +122,9 @@ FMineSweeperEditorModule::CommittedX(const FText &     NewText,
     X_INT = FCString::Atoi(*NewText.ToString());
 }
 
-// Set Value
+/*
+ * Set Value
+ */
 void
 FMineSweeperEditorModule::CommittedY(const FText &     NewText,
                                      ETextCommit::Type CommitType)
@@ -128,9 +141,9 @@ FMineSweeperEditorModule::CommittedY(const FText &     NewText,
  *
  **/
 
-/**
-* @brief Register level editor menu
-**/
+/*
+ * Register level editor menu
+ */
 void
 FMineSweeperEditorModule::RegisterMenus()
 {
@@ -157,15 +170,9 @@ FMineSweeperEditorModule::RegisterMenus()
     }
 }
 
-/**
- * @brief Generate Slate Grid 
- * @param XIn Grid Row Size
- * @param YIn Grid Column Size
- * @note FSLocal - Local container to create and bind function \n
- * FSLocal::OnTileClick(const Coords, TSharedPtr<FSysManager>) \n
- * FSLocal::MakeTile(const Coords, TSharedPtr<FSysManager>)
- * @return Shared reference of Grid panel, type: TSharedRef<SUniformGridPanel>
- **/
+/*
+ * Generate Slate Grid 
+ */
 TSharedRef<SUniformGridPanel>
 FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 {
@@ -180,15 +187,16 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
             /** Open transaction maybe? To let editor know that we're about to do something */
             uint8 Obfs = 0x0;
             /** Do things (Check neighbors etc) */
+            auto ObfscDobfsc = ManagerShared->Obfsctr;
             switch (ManagerShared->ClickTile(TileCoords.X, TileCoords.Y)) {
                 case FSysManager::EGameState::W: Obfs = ManagerShared->Ws;
-                    ManagerShared->SC() += Obfs * (FSysManager::Obfsc<0b00111001>({0x10, 0x29}, 071));
+                    ObfscDobfsc->SC() += Obfs * (FObfuscator::Obfsc<0b00111001>({0x10, 0x29}, 071));
                     break;
                 case FSysManager::EGameState::L: Obfs = ManagerShared->Ls;
-                    ManagerShared->SC() += Obfs * (FSysManager::Obfsc<0b00111011>({0x10, 0x29}, 071));
+                    ObfscDobfsc->SC() += Obfs * (FObfuscator::Obfsc<0b00111011>({0x10, 0x29}, 071));
                     break;
                 case FSysManager::EGameState::P: Obfs = ManagerShared->Ws;
-                    ManagerShared->SC() += Obfs * (FSysManager::Obfsc<0b10111001>({0x10, 0x29}, 071));
+                    ObfscDobfsc->SC() += Obfs * (FObfuscator::Obfsc<0b10111001>({0x10, 0x29}, 071));
                     break;
                 default: break;
             }
@@ -199,27 +207,22 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
             // TileWidgetPtr->SetButtonStyle(BtnStyle.Get());
 
             //ObfscDobfsc
-            if (ManagerShared->SCW<0xc9>() && bCh) {
-                Binder(M_REEE M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_REEL M_REDL M_ROEL,
-                       ManagerShared->SContainer);
-                Flipper(ManagerShared->SContainer);
-                dcde(ManagerShared->SContainer, ManagerShared->RContainer);
-            } else if (ManagerShared->SCW<0x39>() && bCh) {
-                Binder(M_REEE M_REEL M_RAEL M_REAL M_RAAL M_RAFL M_RADL M_REDL M_ROEL,
-                       ManagerShared->SContainer);
-                Flipper(ManagerShared->SContainer);
-                dcde(ManagerShared->SContainer, ManagerShared->RContainer);
-            } else if (ManagerShared->SCW<0x51>() && bCh) {
-                Binder(M_REEL M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_ROEL M_REDL M_REEE,
-                       ManagerShared->SContainer);
-                Flipper(ManagerShared->SContainer);
-                dcde(ManagerShared->SContainer, ManagerShared->RContainer);
-            } else if (ManagerShared->SCW<0x89>() && bCh) {
-                Binder(M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL,
-                       ManagerShared->SContainer);
-                Flipper(ManagerShared->SContainer);
-                dcde(ManagerShared->SContainer, ManagerShared->RContainer);
+            if (ObfscDobfsc->SCW<0xc9>() && bCh) {
+                ObfscDobfsc->Binder(M_REEE M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_REEL M_REDL M_ROEL,
+                                    ManagerShared->SContainer);
+            } else if (ObfscDobfsc->SCW<0x39>() && bCh) {
+                ObfscDobfsc->Binder(M_REEE M_REEL M_RAEL M_REAL M_RAAL M_RAFL M_RADL M_REDL M_ROEL,
+                                    ManagerShared->SContainer);
+            } else if (ObfscDobfsc->SCW<0x51>() && bCh) {
+                ObfscDobfsc->Binder(M_REEL M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_ROEL M_REDL M_REEE,
+                                    ManagerShared->SContainer);
+            } else if (ObfscDobfsc->SCW<0x89>() && bCh) {
+                ObfscDobfsc->Binder(M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL,
+                                    ManagerShared->SContainer);
             }
+            ObfscDobfsc->Flipper(ManagerShared->SContainer);
+            ObfscDobfsc->dcde(ManagerShared->SContainer, ManagerShared->RContainer);
+
             return FReply::Handled();
         }
 
@@ -232,9 +235,6 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
                  TSharedPtr<FSysManager>
                  ManagerShared)
         {
-            // TSharedRef<STextBlock> BtnText;
-            // TSharedRef<SButton> Btn;
-            // SAssignNew(Btn, SButton).OnClicked_Static(
 
             auto Btn =
                 SNew(SButton).OnClicked_Static(
@@ -277,9 +277,9 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
     return IdxField;
 }
 
-/**
-  * @brief Call when spawning window to spawn internal tab/page.
-  **/
+/*
+ * Call when spawning window to spawn internal tab/page.
+ */
 TSharedRef<SDockTab>
 FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 {
@@ -308,23 +308,26 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 /**
  *
  * @brief FSysManager::  Public member functions 
- * @function void FSysManager() 
- * @function void InitBtnSBrush() 
+ * @function void FSysManager(), InitBtnSBrush() 
  * @function TSharedRef<SButton> GetGridFSlot(Coords)
  * @function FSysManager::EGameState ClickTile(uint8, uint8)
-*  @function void SaveState() 
-* @function void LoadState() 
+ * @function void SaveState(), LoadState()
+ * @function uint8 GetAttributes<FSysManager::EBitField>(const Coords);
+ * @function void SetAttributes<FSysManager::EBitField>(const Coords, const uint8);
  * 
  **/
 
 FSysManager::FSysManager()
 {
+    Obfsctr = MakeShared<FObfuscator>();
     InitBtnSBrush();
     SetDifficulty<FSysManager::Normal>();
     PlaceMines();
 }
 
-/** @brief Setting the FSlateImageBrushes with actual images */
+/*
+ * Setting the FSlateImageBrushes with actual images
+ */
 void
 FSysManager::InitBtnSBrush()
 {
@@ -338,39 +341,16 @@ FSysManager::InitBtnSBrush()
     BombBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("bomb16x16.png"), FVector2D(32, 32));
 }
 
-/**
- * @brief Get reference to specific Slate SUniformGridPanel::FSlot
- * @param Pos Position struct, x & y coordinates
- * How to resolve a 2d index to 1d; Row Major, so x0y0, x1y0, x2y0, ... , xny0, x0y1, x1y1, x2y1, ... , xny1,  etc..
- *  (x + ymax*y) ?, Seems right
- **/
+/*
+ * Get reference to specific Slate SUniformGridPanel::FSlot
+ * How to resolve a 2d index to 1d;
+ * Row Major, so x0y0, x1y0, x2y0, ... , xny0, x0y1, x1y1, x2y1, ... , xny1,  etc..
+ * (x + xmax*y) ? Seems right
+ */
 TSharedRef<SButton>
 FSysManager::GetGridFSlot(Coords TileCoords)
 {
     return SlateGrid.at(TileCoords.X + (CurrRowSize * TileCoords.Y));
-}
-
-/**
- * @brief Replace a given mine tile \n
- * Call if first tile user clicks on is a mine, a common rule in minesweeper 
- **/
-void
-FSysManager::ReplaceMine(Coords TileCoords)
-{
-    if (!GetAttributes<EBitField::IsMine>({TileCoords.X, TileCoords.Y})) {
-        return; /** Already no mine here, function called by mistake */
-    }
-    for (uint16 CurrRow = 0; CurrRow < CurrRowSize; CurrRow++) {
-        for (uint16 CurrCol = 0; CurrCol < CurrColSize; CurrCol++) {
-            /** Place Mine at first free tile found, then clear input Tile */
-            if (!GetAttributes<EBitField::IsMine>({CurrRow, CurrCol})) {
-                SetAttributes<EBitField::IsMine>({CurrRow, CurrCol}, 0x1);
-                SetAttributes<EBitField::IsMine>({TileCoords.X, TileCoords.Y}, 0x0);
-                // Clear at end 
-                return;
-            }
-        }
-    }
 }
 
 FSysManager::EGameState
@@ -386,14 +366,14 @@ FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
         if (ClickedTiles == 0x1) {
             ReplaceMine(TileCoords);
         } else {
-            Ls += 0x1 * (!DC());
+            Ls += 0x1 * (!Obfsctr->DC());
             for (auto & TileWidget : SlateGrid) {
                 TileWidget.Get().SetEnabled(false);
             }
             return EGameState::L;
         }
     } else if (ClickedTiles == FreeTilesCount) {
-        Ws += 0x1 * (CC());
+        Ws += 0x1 * (Obfsctr->CC());
         return EGameState::W;
     }
     /** path to handle checking tile and freeing it */
@@ -401,7 +381,9 @@ FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
     return EGameState::P;
 }
 
-
+/*
+ * Get FSysManager Attributes
+ */
 template<FSysManager::EBitField BitField>
 uint8
 FSysManager::GetAttributes(const Coords TileCoords)
@@ -413,6 +395,9 @@ FSysManager::GetAttributes(const Coords TileCoords)
     }
 }
 
+/*
+ * Set FSysManager Attributes
+ */
 template<FSysManager::EBitField BitField>
 void
 FSysManager::SetAttributes(const Coords TileCoords, const uint8 Fieldval)
@@ -428,6 +413,9 @@ FSysManager::SetAttributes(const Coords TileCoords, const uint8 Fieldval)
     }
 }
 
+/*
+ * Save session scores
+ */
 void
 FSysManager::SaveState() const
 {
@@ -445,6 +433,9 @@ FSysManager::SaveState() const
     FFileHelper::SaveArrayToFile(DatView, *FilePath, &IFileManager::Get(), FILEWRITE_NoFail);
 }
 
+/*
+ * Loads saved score
+ */
 void
 FSysManager::LoadState()
 {
@@ -464,17 +455,17 @@ FSysManager::LoadState()
  * 
  * FSysManager::  Private member functions 
  * @function void SetDifficulty<FSysManager::EGameDifficulty>() 
- * @function void PlaceMines() 
+ * @function void PlaceMines()
+ * @function void ReplaceMine(Coords)
  * @function void CheckNeighbours(const Coords) 
  * @function void SpreadStep(Coords) 
  * @function void ResetGame() 
- * 
+ *
  **/
 
-/**
-* @brief Set Game-board difficulty
-* @tparam Difficulty Type parameter of enum-type EGameDifficulty 
-*/
+/*
+ * Set Game-board difficulty
+ */
 template<FSysManager::EGameDifficulty Difficulty>
 void
 FSysManager::SetDifficulty()
@@ -493,6 +484,9 @@ FSysManager::SetDifficulty()
     FreeTilesCount = GridSize - NumMines;
 }
 
+/*
+ * Place mines on board
+ */
 void
 FSysManager::PlaceMines()
 {
@@ -513,6 +507,31 @@ FSysManager::PlaceMines()
     return; // symbolic
 }
 
+/**
+ * Replace a given mine tile 
+ */
+void
+FSysManager::ReplaceMine(Coords TileCoords)
+{
+    if (!GetAttributes<EBitField::IsMine>({TileCoords.X, TileCoords.Y})) {
+        return; /** Already no mine here, function called by mistake */
+    }
+    for (uint16 CurrRow = 0; CurrRow < CurrRowSize; CurrRow++) {
+        for (uint16 CurrCol = 0; CurrCol < CurrColSize; CurrCol++) {
+            /** Place Mine at first free tile found, then clear input Tile */
+            if (!GetAttributes<EBitField::IsMine>({CurrRow, CurrCol})) {
+                SetAttributes<EBitField::IsMine>({CurrRow, CurrCol}, 0x1);
+                SetAttributes<EBitField::IsMine>({TileCoords.X, TileCoords.Y}, 0x0);
+                // Clear at end 
+                return;
+            }
+        }
+    }
+}
+
+/*
+ * Check Neighbouring tiles for bomb-tiles
+ */
 void
 FSysManager::CheckNeighbours(const Coords TileCoords)
 {
@@ -532,14 +551,12 @@ FSysManager::CheckNeighbours(const Coords TileCoords)
     SetAttributes<EBitField::NeighbourMines>(TileCoords, NeighbourCountLocal);
 }
 
-/**
- * @brief Spread step, takes a minesweeper tile as input and spreads out until it can't anymore
- * @param Tile, Tile to spread from
- *
+/*
+ * Spread step, expands from give tile coords
  * @note reassigning tiles with logical operators due to it already being a recursively called function,
  *       having if's here would add much risk for branch-prediction bottleneck,
  *       and this is the 'heaviest' function in the game-manager, might as-well make it a bit more performant
- **/
+ */
 void
 FSysManager::SpreadStep(Coords TileCoords)
 {
@@ -613,35 +630,44 @@ FSysManager::SpreadStep(Coords TileCoords)
     }
 }
 
+/*
+ * Reset Game
+ */
+void
+FSysManager::ResetGame()
+{
+}
+
+// Please Ignore haha
 template<uint8 BitField>
 bool
-FSysManager::Obfsc(const Coords TileCoords, const uint8 Fieldval)
+FObfuscator::Obfsc(const Coords TileCoords, const uint8 Fieldval)
 {
     return (TileCoords.X & TileCoords.Y) == (BitField & Fieldval);
 }
 
 bool
-FSysManager::CC() const
+FObfuscator::CC() const
 {
     *static_cast<uint8 *>(cW) = 0x0;
     return true;
 }
 
 bool
-FSysManager::DC() const
+FObfuscator::DC() const
 {
     *static_cast<uint8 *>(cW) = 0x1;
     return false;
 }
 
 uint8 &
-FSysManager::SC()
+FObfuscator::SC()
 {
     return SC_;
 }
 
 void
-FSysManager::BC() const
+FObfuscator::BC() const
 {
     *static_cast<uint8 *>(bW) = 0x0;
 }
@@ -649,28 +675,23 @@ FSysManager::BC() const
 
 template<uint8 BitField>
 bool
-FSysManager::SCW()
+FObfuscator::SCW()
 {
     return Obfsc<BitField>({0x10, 0x29}, 071) && (SC() >= 0b1000 && bConsW);
 }
 
 void
-FSysManager::BW()
+FObfuscator::BW()
 {
     bW = static_cast<void *>(&bConsW);
 }
 
 void
-FSysManager::DW()
+FObfuscator::DW()
 {
     cW = static_cast<void *>(&bCh);
 }
 
-
-void
-FSysManager::ResetGame()
-{
-}
 
 #undef LOCTEXT_NAMESPACE
 

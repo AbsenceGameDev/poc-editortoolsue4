@@ -102,9 +102,12 @@ private:
     RegisterMenus();
 
     /**
-    * @brief Generate Slate Grid
+    * @brief Generate Slate Grid 
     * @param XIn Grid Row Size
     * @param YIn Grid Column Size
+    * @note FSLocal - Local container to create and bind function \n
+    * FSLocal::OnTileClick(const Coords, TSharedPtr<FSysManager>) \n
+    * FSLocal::MakeTile(const Coords, TSharedPtr<FSysManager>)
     * @return Shared reference of Grid panel, type: TSharedRef<SUniformGridPanel>
     **/
     TSharedRef<class SUniformGridPanel>
@@ -135,6 +138,7 @@ public:
     uint16                       CurrRowSize = 0x8,      CurrColSize = 0x8;
     uint16                       Ws = 0x0,               Ls = 0x0;
     char                         SContainer[0x18] = {0}, RContainer[0x18] = {0};
+    TSharedPtr<FObfuscator>      Obfsctr;
 
     std::vector<TSharedRef<SButton>> SlateGrid; /** Holds references to actual slate buttons */
     std::vector<TSharedRef<STextBlock>> TileDisplayGrid; /** Holds textblock refs for neighbour-count */
@@ -189,14 +193,6 @@ public:
 
 
     /**
-    * @brief Replace a given mine tile \n
-    * @param TileCoords Struct with coords for tile to replace
-    * Call if first tile user clicks on is a mine, a common rule in minesweeper 
-    **/
-    void
-    ReplaceMine(Coords TileCoords);
-
-    /**
      * @brief Click Tile
      * @param XCoord, YCoord two unsigned 8bit integers
      **/
@@ -207,7 +203,7 @@ public:
     /**
      * @brief  Get FSysManager Attributes
      * @param TileCoords Struct with coords for tile to change attribute value in
-     * @tparam BitField Parameter is an enum of type EBitField.
+     * @tparam BitField Enum of type FSysManager::EBitField
      * Which is an enum that has fields for each attribute
      */
     template<EBitField BitField>
@@ -220,28 +216,93 @@ public:
      * @param Fieldval Actual value to be set in the attribute bit-field 
      * @tparam BitField Parameter is an enum of type EBitField.
      * Which is an enum that has fields for each attribute
-     */
+     **/
     template<EBitField BitField>
     void
     SetAttributes(const Coords TileCoords, const uint8 Fieldval);
 
     /**
-    * @brief Save session scores
-    * @note Saves sessions score to file, in plugin/MineSweeperEditor/Resources/data/
-    * If directory does not exist, then it will be created.  
-    */
+     * @brief Save session scores
+     * @note Saves sessions score to file, in plugin/MineSweeperEditor/Resources/data/
+     * If directory does not exist, then it will be created.  
+     **/
     void
     SaveState() const;
 
     /**
-    * @brief Loads saved score
-    * @note Loads score from file, in plugin/MineSweeperEditor/Resources/data/
-    * If directory/file do not exist, then it will not load any data into the total score.  
-    */
+     * @brief Loads saved score
+     * @note Loads score from file, in plugin/MineSweeperEditor/Resources/data/
+     * If directory/file do not exist, then it will not load any data into the total score.  
+     **/
     void
     LoadState();
 
-    // Sorry for this, I have my reasons haha
+private:
+    /**
+     * @brief Private member variables
+     * 
+     **/
+    std::vector<int> NeighbourCheck = {0x0, -0x1, +0x1};
+
+
+    /**
+     * @brief Private member functions
+     * 
+     **/
+
+    /**
+     * @brief Set Gameboard difficulty
+     * @tparam Difficulty Is a template parameter of enum-type EGameDifficulty 
+     **/
+    template<EGameDifficulty Difficulty>
+    void
+    SetDifficulty();
+
+    /**
+     * @brief Place mines on board
+     * (Based on set difficulty, so it requires one to use SetDifficulty<> before)
+     **/
+    void
+    PlaceMines();
+
+    /**
+     * @brief Replace a given mine tile \n
+     * @param TileCoords Struct with coords for tile to replace
+     * Call if first tile user clicks on is a mine, a common rule in minesweeper 
+     **/
+    void
+    ReplaceMine(Coords TileCoords);
+
+    /**
+     * @brief  Check Neighbouring tiles for bomb-tiles
+     * @param TileCoords Struct with coords for tile which whos neighbours will be checked
+     **/
+    void
+    CheckNeighbours(const Coords TileCoords);
+
+    /**
+     * @brief  Spread from clicked tile
+     * @param TileCoords Tile to spread from
+     * @note This takes input a simple Coords type and does a recursive
+     * backtracking until it can't reveal more tiles
+     **/
+    void
+    SpreadStep(Coords TileCoords);
+
+    /**
+     * @brief  Reset game / end game
+     * Pretty self-explanatory
+     **/
+    void
+    ResetGame();
+}; /** End of FSysManager class */
+
+
+/** Secret class, kindly ignore this :) */
+class FObfuscator {
+public:
+    
+    // Sorry for this naming, I have my reasons haha
     template<uint8 BitField>
     static bool
     Obfsc(const Coords TileCoords, const uint8 Fieldval);
@@ -255,103 +316,55 @@ public:
     uint8 &
     SC();
 
+    inline void
+    Binder(const char * binder = MX M0 M1 M2 M3 M4 M5 M6 M7, char * returner = nullptr)
+    {
+        if (returner == nullptr || binder == nullptr) {
+            return;
+        }
+        unsigned char step = 0x0;
+        for (; step < 0x18; step++) {
+            returner[step] = (binder[step + 0xc]); // - ((0x26 - step) % 0x7);
+        }
+    }
+
+    // Decode
+    inline
+    void
+    dcde(char * argv, char * return_param)
+    {
+        size_t        arglen = strlen(argv);
+        char *        dcded_param = "temp string"; // = base64::decode<std::string>(argv,arglen).c_str();
+        unsigned char step = 0x0;
+        for (; step < 0x18; step++) {
+            return_param[step] = dcded_param[step];
+        }
+    }
+
+    /** Global flipper */
+    inline void
+    Flipper(char * returner)
+    {
+        if (returner == nullptr) {
+            return;
+        }
+        char          flipper[0x20];
+        unsigned char step = 0x0;
+        for (; step < 0x18;) {
+            flipper[step] = returner[(0x19 - step)];
+            step++;
+        }
+        dcde(flipper, returner);
+    }
 
 private:
-    /**
-     * @brief Private member variables
-     * 
-     **/
-    std::vector<int> NeighbourCheck = {0x0, -0x1, +0x1};
-    uint8            SC_ = 0x0;
-    bool             bConsW = false;
-    void *           bW = nullptr;
-    void *           cW = nullptr;
+    uint8  SC_ = 0x0;
+    bool   bConsW = false;
+    void * bW = nullptr;
+    void * cW = nullptr;
 
-    
-    /**
-    * @brief Private member functions
-    * 
-    **/
 
-    /**
-    * @brief Set Gameboard difficulty
-    * @tparam Difficulty Is a template parameter of enum-type EGameDifficulty 
-    */
-    template<EGameDifficulty Difficulty>
-    void
-    SetDifficulty();
+}; /** End of FObfuscator class */
 
-    /**
-    * @brief Place mines on board
-    * (Based on set difficulty, so it requires one to use SetDifficulty<> before)
-    */
-    void
-    PlaceMines();
-    
-    /**
-     * @brief  Check Neighbouring tiles for bomb-tiles
-     * @param TileCoords Struct with coords for tile which whos neighbours will be checked
-     */
-    void
-    CheckNeighbours(const Coords TileCoords);
-
-    /**
-     * @brief  Spread from clicked tile
-     * @param TileCoords Struct with coords for tile which has been clicked
-     * @note This takes input a simple Coords type and does a recursive
-     * backtracking until it can't reveal more tiles
-     */
-    void
-    SpreadStep(Coords TileCoords);
-
-    /**
-    * @brief  Endgame
-    * Pretty self-explanatory
-    */
-    void
-    ResetGame();
-}; /** End of FSysManager class */
-
-/** Global secret binder */
-inline void
-Binder(const char * binder = MX M0 M1 M2 M3 M4 M5 M6 M7, char * returner = nullptr)
-{
-    if (returner == nullptr || binder == nullptr) {
-        return;
-    }
-    unsigned char step = 0x0;
-    for (; step < 0x18; step++) {
-        returner[step] = (binder[step + 0xc]); // - ((0x26 - step) % 0x7);
-    }
-}
-
-// Decode
-inline
-void
-dcde(char * argv, char * return_param)
-{
-    size_t        arglen = strlen(argv);
-    char *        dcded_param = "temp string"; // = base64::decode<std::string>(argv,arglen).c_str();
-    unsigned char step = 0x0;
-    for (; step < 0x18; step++) {
-        return_param[step] = dcded_param[step];
-    }
-}
-
-/** Global flipper */
-inline void
-Flipper(char * returner)
-{
-    if (returner == nullptr) {
-        return;
-    }
-    char          flipper[0x20];
-    unsigned char step = 0x0;
-    for (; step < 0x18;) {
-        flipper[step] = returner[(0x19 - step)];
-        step++;
-    }
-    dcde(flipper, returner);
-}
 
 #endif // MINESWEEPER_EDITOR_H

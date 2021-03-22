@@ -31,6 +31,7 @@ bool bCh = false;
 
 // Forawrd declrs.
 class FSysManager;
+class FObfuscator;
 class FToolBarBuilder;
 class FMenuBuilder;
 struct FSlateImageBrush;
