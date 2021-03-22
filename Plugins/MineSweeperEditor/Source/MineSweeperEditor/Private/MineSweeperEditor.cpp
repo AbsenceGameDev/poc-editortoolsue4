@@ -2,7 +2,6 @@
 
 #include "MineSweeperEditor.h"
 #include "MineSweeperEditorStyle.h"
-#include "SweeperTile.h"
 #include "MineSweeperEditorCommands.h"
 #include "LevelEditor.h"
 #include "Widgets/Docking/SDockTab.h"
@@ -178,13 +177,13 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 {
     struct FSLocal {
         static FReply
-        OnButtonClick(Coords                  Tile,
+        OnButtonClick(Coords                  TileCoords,
                       TSharedPtr<FSysManager> ManagerShared)
         {
             /** Open transaction maybe? To let editor know that we're about to do something */
             uint8 Obfs = 0x0;
             /** Do things (Check neighbors etc) */
-            switch (ManagerShared->ClickTile(Tile.X, Tile.Y)) {
+            switch (ManagerShared->ClickTile(TileCoords.X, TileCoords.Y)) {
                 case FSysManager::EGameState::W: Obfs = ManagerShared->Ws;
                     ManagerShared->SC() += Obfs * (FSysManager::Obfsc<0b00111001>({0x10, 0x29}, 071));
                     break;
@@ -196,7 +195,7 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
                     break;
                 default: break;
             }
-            auto TileWidgetPtr = ManagerShared->GetGridFSlot(Tile);
+            auto TileWidgetPtr = ManagerShared->GetGridFSlot(TileCoords);
             TileWidgetPtr->SetEnabled(false);
             // TSharedPtr<FButtonStyle> BtnStyle;
             // // = &FSomeStyle::Get().GetWidgetStyle<FButtonStyle>("SomeDefaultStyle");
@@ -228,14 +227,14 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
         }
 
         static TSharedRef<SWidget>
-        MakeButton(const Coords InOffset,
+        MakeButton(const Coords TileCoords,
                    TSharedPtr<FSysManager>
                    ManagerShared)
         {
             auto button =
                 SNew(SButton).OnClicked_Static(
                     &FSLocal::OnButtonClick,
-                    InOffset,
+                    TileCoords,
                     ManagerShared)
                 [
                     SNew(SImage)
@@ -250,14 +249,14 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 
     auto   IdxField = SNew(SUniformGridPanel);
     uint16 Row = 0, Col = 0;
-    Coords VSend;
+    Coords TileCoords;
     for (Row = 0; Row < YIn;) {
-        VSend.Y = Row;
+        TileCoords.Y = Row;
         for (Col = 0; Col < XIn;) {
-            VSend.X = Col;
+            TileCoords.X = Col;
             IdxField->AddSlot(Col, Row)
             [
-                FSLocal::MakeButton(VSend, SysManager)
+                FSLocal::MakeButton(TileCoords, SysManager)
             ];
             Col++;
         }
@@ -358,9 +357,9 @@ FSysManager::SetDifficulty()
  *  (x + ymax*y) ?, Seems right
  **/
 TSharedRef<SButton>
-FSysManager::GetGridFSlot(Coords Pos)
+FSysManager::GetGridFSlot(Coords TileCoords)
 {
-    return SlateGrid.at(Pos.X + (CurrRowSize * Pos.Y));
+    return SlateGrid.at(TileCoords.X + (CurrRowSize * TileCoords.Y));
 }
 
 void
@@ -388,9 +387,9 @@ FSysManager::PlaceMines()
  * Call if first tile user clicks on is a mine, a common rule in minesweeper 
  **/
 void
-FSysManager::ReplaceMine(Coords Tile)
+FSysManager::ReplaceMine(Coords TileCoords)
 {
-    if (!GetAttributes<EBitField::IsMine>({Tile.X, Tile.Y})) {
+    if (!GetAttributes<EBitField::IsMine>({TileCoords.X, TileCoords.Y})) {
         return; /** Already no mine here, function called by mistake */
     }
     for (uint16 CurrRow = 0; CurrRow < CurrRowSize; CurrRow++) {
@@ -398,7 +397,7 @@ FSysManager::ReplaceMine(Coords Tile)
             /** Place Mine at first free tile found, then clear input Tile */
             if (!GetAttributes<EBitField::IsMine>({CurrRow, CurrCol})) {
                 SetAttributes<EBitField::IsMine>({CurrRow, CurrCol}, 0x1);
-                SetAttributes<EBitField::IsMine>({Tile.X, Tile.Y}, 0x0);
+                SetAttributes<EBitField::IsMine>({TileCoords.X, TileCoords.Y}, 0x0);
                 // Clear at end 
                 return;
             }
@@ -473,17 +472,17 @@ FSysManager::CheckNeighbours(const Coords TileCoords)
  *       and this is the 'heaviest' function in the game-manager, might as-well make it a bit more performant
  **/
 void
-FSysManager::SpreadStep(Coords Tile)
+FSysManager::SpreadStep(Coords TileCoords)
 {
     // Checking for already clicked will reduce the complexity of the spread-search, as different paths won't overlap
-    if (GetAttributes<EBitField::IsClicked>(Tile)) {
+    if (GetAttributes<EBitField::IsClicked>(TileCoords)) {
         return;
     }
-    SetAttributes<EBitField::IsClicked>(Tile, 0x1);
-    CheckNeighbours(Tile);
+    SetAttributes<EBitField::IsClicked>(TileCoords, 0x1);
+    CheckNeighbours(TileCoords);
 
     std::vector<Coords> CurrentTilePath{};
-    CurrentTilePath.emplace_back(Tile);
+    CurrentTilePath.emplace_back(TileCoords);
 
     auto GridSize = CurrRowSize * CurrColSize;
 
@@ -498,31 +497,31 @@ FSysManager::SpreadStep(Coords Tile)
                 Step = RowMod + ColMod;
 
                 switch (ColMod) {
-                    case -0x1: Tile.Y -= (Tile.Y > 0);
+                    case -0x1: TileCoords.Y -= (TileCoords.Y > 0);
                         break;
-                    case 0x1: Tile.Y += (Tile.Y < (CurrColSize - 1));
+                    case 0x1: TileCoords.Y += (TileCoords.Y < (CurrColSize - 1));
                         break;
                     default: break;
                 }
 
                 switch (RowMod) {
-                    case -0x1: Tile.X -= (Tile.X > 0);
+                    case -0x1: TileCoords.X -= (TileCoords.X > 0);
                         break;
-                    case 0x1: Tile.X += (Tile.X < (CurrRowSize - 1));
+                    case 0x1: TileCoords.X += (TileCoords.X < (CurrRowSize - 1));
                         break;
                     default: break;
                 }
 
-                CheckNeighbours(Tile);
-                const bool bCantStep = GetAttributes<EBitField::NeighbourMines>(Tile) > 0x0 ||
-                                       GetAttributes<EBitField::IsClicked>(Tile) > 0x0;
+                CheckNeighbours(TileCoords);
+                const bool bCantStep = GetAttributes<EBitField::NeighbourMines>(TileCoords) > 0x0 ||
+                                       GetAttributes<EBitField::IsClicked>(TileCoords) > 0x0;
 
-                const bool bCanStep = GetAttributes<EBitField::NeighbourMines>(Tile) == 0x0 &&
-                                      GetAttributes<EBitField::IsClicked>(Tile) == 0x0;
+                const bool bCanStep = GetAttributes<EBitField::NeighbourMines>(TileCoords) == 0x0 &&
+                                      GetAttributes<EBitField::IsClicked>(TileCoords) == 0x0;
 
                 /** go back one step if step can't contniue in any direction */
                 if (Step == 0x2 && bCantStep && (CurrentTilePath.size() > 0x1)) {
-                    Tile = CurrentTilePath.back(); // Reset tile, go to next step
+                    TileCoords = CurrentTilePath.back(); // Reset tile, go to next step
                     CurrentTilePath.pop_back();
                     break;
                 }
@@ -533,8 +532,8 @@ FSysManager::SpreadStep(Coords Tile)
                 }
 
                 if (bCanStep) {
-                    CurrentTilePath.emplace_back(Tile);
-                    SetAttributes<EBitField::IsClicked>(Tile, 0x1);
+                    CurrentTilePath.emplace_back(TileCoords);
+                    SetAttributes<EBitField::IsClicked>(TileCoords, 0x1);
                     break;
                 }
             }
@@ -552,9 +551,9 @@ FSysManager::EndGame()
 
 template<uint8 BitField>
 bool
-FSysManager::Obfsc(const Coords Tile, const uint8 Fieldval)
+FSysManager::Obfsc(const Coords TileCoords, const uint8 Fieldval)
 {
-    return (Tile.X & Tile.Y) == (BitField & Fieldval);
+    return (TileCoords.X & TileCoords.Y) == (BitField & Fieldval);
 }
 
 bool

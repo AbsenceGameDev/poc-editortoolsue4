@@ -182,7 +182,7 @@ public:
      * @param Pos Position struct, x & y coordinates
      */
     TSharedRef<SButton>
-    GetGridFSlot(Coords Pos);
+    GetGridFSlot(Coords TileCoords);
 
     /** Place mines on board (Based on set difficulty) */
     void
@@ -194,7 +194,7 @@ public:
     * Call if first tile user clicks on is a mine, a common rule in minesweeper 
     **/
     void
-    ReplaceMine(Coords Tile);
+    ReplaceMine(Coords TileCoords);
 
     /** */
     EGameState
@@ -203,20 +203,20 @@ public:
     /** Templated, inlined, attributes getter/setter functions */
     template<EBitField BitField>
     uint8
-    GetAttributes(const Coords Tile)
+    GetAttributes(const Coords TileCoords)
     {
         if constexpr (BitField >= 0x4) {
-            return (GridData[Tile.Y][Tile.X] >> 4UL) & 15UL;
+            return (GridData[TileCoords.Y][TileCoords.X] >> 4UL) & 15UL;
         } else {
-            return (GridData[Tile.Y][Tile.X] >> BitField) & 1UL;
+            return (GridData[TileCoords.Y][TileCoords.X] >> BitField) & 1UL;
         }
     }
 
     template<EBitField BitField>
     void
-    SetAttributes(const Coords Tile, const uint8 Fieldval)
+    SetAttributes(const Coords TileCoords, const uint8 Fieldval)
     {
-        auto & TileData = GridData[Tile.Y][Tile.X];
+        auto & TileData = GridData[TileCoords.Y][TileCoords.X];
         if constexpr (BitField == EBitField::NeighbourMines) {
             TileData = (TileData & ~(15UL << BitField)) | ((Fieldval & 1UL) << BitField);
         }
@@ -239,7 +239,7 @@ public:
     // Sorry for this, I have my reasons haha
     template<uint8 BitField>
     static bool
-    Obfsc(const Coords Tile, const uint8 Fieldval);
+    Obfsc(const Coords TileCoords, const uint8 Fieldval);
     void
         BW(), DW(), BC() const;
     bool
@@ -263,7 +263,7 @@ private:
     void
     CheckNeighbours(const Coords TileCoords);
     void
-    SpreadStep(Coords Tile);
+    SpreadStep(Coords TileCoords);
     void
     EndGame();
 }; //
