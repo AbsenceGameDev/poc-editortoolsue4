@@ -1,11 +1,14 @@
 /** Ario Amin - MineSweeper Geodesic Test */
 
 #include "MineSweeperEditor.h"
+
+#include "EditorReimportHandler.h"
 #include "MineSweeperEditorStyle.h"
 #include "MineSweeperEditorCommands.h"
 #include "LevelEditor.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "Widgets/Layout/SWrapBox.h"
+#include "Widgets/Views/SListView.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 #include "Widgets/Input/SNumericEntryBox.h"
 #include "Widgets/Text/STextBlock.h"
@@ -32,7 +35,6 @@ static const FName GMineSweeperEditorTabName("MineSweeperEditor");
 
 FMineSweeperEditorModule::FMineSweeperEditorModule()
 {
-    X_INT = Y_INT = 0;
     SysManager = MakeShared<FSysManager>();
     SysManager->LoadState();
 }
@@ -95,41 +97,23 @@ FMineSweeperEditorModule::TabBtnClicked() const
 
 
 /*
- * get value to display in SNumericEntryBox
+ * Set Value
  */
-uint16
-FMineSweeperEditorModule::GetX() const
+void
+FMineSweeperEditorModule::CommittedX(const uint8       NewInt,
+                                     ETextCommit::Type CommitType) const
 {
-    return X_INT;
-}
-
-/*
- * get value to display in SNumericEntryBox
- */
-uint16
-FMineSweeperEditorModule::GetY() const
-{
-    return Y_INT;
+    SysManager->CurrRowSize = NewInt;
 }
 
 /*
  * Set Value
  */
 void
-FMineSweeperEditorModule::CommittedX(const FText &     NewText,
-                                     ETextCommit::Type CommitType)
+FMineSweeperEditorModule::CommittedY(const uint8       NewInt,
+                                     ETextCommit::Type CommitType) const
 {
-    X_INT = FCString::Atoi(*NewText.ToString());
-}
-
-/*
- * Set Value
- */
-void
-FMineSweeperEditorModule::CommittedY(const FText &     NewText,
-                                     ETextCommit::Type CommitType)
-{
-    Y_INT = FCString::Atoi(*NewText.ToString());
+    SysManager->CurrColSize = NewInt;
 }
 
 /**
@@ -282,24 +266,85 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 TSharedRef<SDockTab>
 FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 {
+    struct SLocal {
+        static FReply
+        OnTileClick(Coords                  TileCoords,
+                    TSharedPtr<FSysManager> ManagerShared)
+        {
+            ManagerShared->ResetGame();
+            ManagerShared->OptGridWidgetRef->Get().ClearChildren();
+            return FReply::Handled();
+        };
+
+        static FReply
+        ResetGameBind(const FMineSweeperEditorModule* Owner, TSharedPtr<FSysManager> Manager)
+        {
+            /** Reset gamein SysManager, generate new slategrid, etc*/
+            Manager->ResetGame();
+            Manager->OptGridWidgetRef->Get().ClearChildren();
+            Manager->OptGridWidgetRef = Owner->GenerateGrid(Manager->CurrRowSize, Manager->CurrColSize);
+            return FReply::Handled();
+        }
+    };
+     
     const FText WelcomeTextl0 = LOCTEXT("MineSweeperPrompt0",
                                         "Welcome to MineSweeper. Win 8 matches during one session to uncover a secret!");
     const FText WelcomeTextl1 = LOCTEXT("MineSweeperPrompt1",
                                         "(Win/Loss is saved, but Secret Count resets when closing the editor. Secret count is only applicable on hard or above)");
     const FText WelcomeTextl2 = LOCTEXT("MineSweeperPromp2",
-                                        "( Please, no cheating by looking at source code. If you do, I have tried making it hard haha.)");
+                                        "( Please, no cheating by looking at source code. In case you do, I have tried obfuscating it alot haha.)");
     return SNew(SDockTab).TabRole(ETabRole::NomadTab)
            [
-               /** Put your tab contents */
                SNew(SWrapBox).PreferredWidth(300.f)
                + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
                    SNew(STextBlock).Text(WelcomeTextl0)
-               ] + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+               ]
+
+               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
                    SNew(STextBlock).Text(WelcomeTextl1)
-               ] + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+               ]
+
+               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
                    SNew(STextBlock).Text(WelcomeTextl2)
                ] + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
-                   GenerateGrid(SysManager->CurrRowSize, SysManager->CurrColSize)
+                   // List difficulty options, bind selected/clicked item to 
+                   SNew(SListView<TSharedPtr<FString>>)
+                       .ItemHeight(24)
+                       .ListItemsSource(&SysManager->DifficultyList)
+                   // .OnGenerateRow(SListView<TSharedPtr<FString>>::Widget)
+                   // .OnGenerateRow(SListView<TSharedPtr<FString>>::MakeOnGenerateWidget(this, &FMineSweeperEditorModule::OnGenerateRowForList))
+               ]
+
+               // Create game/board Button 
+               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+                   SNew(SButton).OnClicked_Static(&SLocal::ResetGameBind, this, SysManager)
+                   [SNew(STextBlock).Text(FText::FromString("Create New Game")).Font(
+                        FSlateFontInfo(
+                            FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"),
+                            24))]
+               ]
+
+               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+                   SNew(SWrapBox)
+
+                   // Grid Row size numeric box 
+                   + SWrapBox::Slot().Padding(5).HAlign(HAlign_Left)[
+                       SNew(SNumericEntryBox<uint8>).OnValueCommitted_Raw(
+                           this,
+                           &FMineSweeperEditorModule::CommittedX)
+                   ]
+
+                   // Grid Column size numeric box
+                   + SWrapBox::Slot().Padding(5).HAlign(HAlign_Right)[
+                       SNew(SNumericEntryBox<uint8>).OnValueCommitted_Raw(
+                           this,
+                           &FMineSweeperEditorModule::CommittedY)
+                   ]
+               ]
+               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+                   // TSharedPtr<SUniformGridPanel>::
+                   *(SysManager->OptGridWidgetRef) = GenerateGrid(SysManager->CurrRowSize,
+                                                                  SysManager->CurrColSize)
                ]
            ];
 }
@@ -313,11 +358,21 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
  * @function void SaveState(), LoadState()
  * @function uint8 GetAttributes<FSysManager::EBitField>(const Coords);
  * @function void SetAttributes<FSysManager::EBitField>(const Coords, const uint8);
+ * @function void ResetGame() 
  * 
  **/
 
 FSysManager::FSysManager()
 {
+    TSharedPtr<FString> TempDifficultyString = MakeShared<FString>("Easy :/");
+    DifficultyList.Emplace(TempDifficultyString);
+    TempDifficultyString = MakeShared<FString>("Normal :)");
+    DifficultyList.Emplace(TempDifficultyString);
+    TempDifficultyString = MakeShared<FString>("Hard :D");
+    DifficultyList.Emplace(TempDifficultyString);
+    TempDifficultyString = MakeShared<FString>("Insane :(");
+    DifficultyList.Emplace(TempDifficultyString);
+    OptGridWidgetRef = MakeShared<SUniformGridPanel>();
     Obfsctr = MakeShared<FObfuscator>();
     InitBtnSBrush();
     SetDifficulty<FSysManager::Normal>();
@@ -457,6 +512,28 @@ FSysManager::LoadState()
     Ls = (TotalArr[2] << 0x8) | TotalArr[3];
 }
 
+/*
+* Reset Game
+*/
+void
+FSysManager::ResetGame()
+{
+    for (auto & TileWidget : SlateGrid) {
+        TileWidget->SetEnabled(true);
+    }
+    for (auto & TextBlock : TileDisplayGrid) {
+        TextBlock->SetText(FText::FromString(" "));
+    }
+    for (auto & TileRow : GridData) {
+        for (auto & TileData : TileRow) {
+            TileData = 0x0;
+        }
+    }
+    SlateGrid.clear();
+    TileDisplayGrid.clear();
+    PlaceMines();
+}
+
 /**
  * 
  * FSysManager::  Private member functions 
@@ -465,7 +542,6 @@ FSysManager::LoadState()
  * @function void ReplaceMine(Coords)
  * @function void CheckNeighbours(const Coords) 
  * @function void SpreadStep(Coords) 
- * @function void ResetGame() 
  *
  **/
 
@@ -561,9 +637,8 @@ FSysManager::CheckNeighbours(const Coords TileCoords)
     }
     SetAttributes<EBitField::NeighbourMines>(TileCoords, NeighbourCountLocal);
     if (!GetAttributes<EBitField::IsMine>(TileCoords)) {
-        FString ToString = FString::FromInt(
-            GetAttributes<FSysManager::NeighbourMines>(TileCoords));
-        GetTileTextBlock(TileCoords)->SetText(FText::FromString(ToString));
+        GetTileTextBlock(TileCoords)->SetText(FText::FromString(FString::FromInt(
+            GetAttributes<FSysManager::NeighbourMines>(TileCoords))));
         SlateGrid[TileCoords.X + (CurrRowSize * TileCoords.Y)]->SetEnabled(false);
     }
 }
@@ -665,26 +740,6 @@ FSysManager::SpreadStep(Coords TileCoords)
             backtracker = false;
         }
     }
-}
-
-/*
- * Reset Game
- */
-void
-FSysManager::ResetGame()
-{
-    for (auto & TileWidget : SlateGrid) {
-        TileWidget->SetEnabled(true);
-    }
-    for (auto & TextBlock : TileDisplayGrid) {
-        TextBlock->SetText(FText::FromString(" "));
-    }
-    for (auto & TileRow : GridData) {
-        for (auto & TileData : TileRow) {
-            TileData = 0x0;
-        }
-    }
-    PlaceMines();
 }
 
 // Please Ignore haha

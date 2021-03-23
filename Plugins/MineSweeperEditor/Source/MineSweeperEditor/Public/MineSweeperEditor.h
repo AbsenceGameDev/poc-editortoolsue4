@@ -29,9 +29,9 @@ public:
     * @brief Public member variables
     * 
     **/
-    TSharedPtr<FSysManager> SysManager;
-    uint16                  X_INT; /** this value is displayed in SNumericEntryBox X */
-    uint16                  Y_INT; /** this value is displayed in SNumericEntryBox Y */
+    TSharedPtr<FSysManager>             SysManager;
+    TSharedPtr<SNumericEntryBox<uint8>> NumbericBoxX{};
+    TSharedPtr<SNumericEntryBox<uint8>> NumbericBoxY{};
 
     /**
     * @brief Public member functions
@@ -53,34 +53,22 @@ public:
     TabBtnClicked() const;
 
     /**
-    * @brief Get inputted X-value
-    */
-    uint16
-    GetX() const;
-
-    /**
-    * @brief Get inputted Y-value
-    */
-    uint16
-    GetY() const;
-
-    /**
     * @brief Commit text from text-box 1 to value
-    * @param NewText New display value
+    * @param NewInt New display value
     * @param CommitType
     * @note set value when keyboard input
     */
     void
-    CommittedX(const FText & NewText, ETextCommit::Type CommitType);
+    CommittedX(const uint8 NewInt, ETextCommit::Type CommitType) const;
 
     /**
     * @brief Commit text from text-box 1 to value
-    * @param NewText New display value
+    * @param NewInt New display value
     * @param CommitType
     * @note set value when keyboard input
     */
     void
-    CommittedY(const FText & NewText, ETextCommit::Type CommitType);
+    CommittedY(const uint8 NewInt, ETextCommit::Type CommitType) const;
 
 private:
 
@@ -100,6 +88,12 @@ private:
     **/
     void
     RegisterMenus();
+
+    /**
+    * @brief Bound to reset button
+    **/
+    // FReply
+    // ResetGameBind();
 
     /**
     * @brief Generate Slate Grid 
@@ -132,13 +126,15 @@ public:
      * @brief Public member variables
      * 
      **/
-    static constexpr uint16      Gmax_Size = 0x40;
-    TSharedPtr<FSlateImageBrush> FlagBrush,              QuestionBrush,        BombBrush;
-    uint16                       NumMines = 0x0,         FreeTilesCount = 0x0, ClickedTiles = 0x0;
-    uint16                       CurrRowSize = 0xc,      CurrColSize = 0xc;
-    uint16                       Ws = 0x0,               Ls = 0x0;
-    char                         SContainer[0x18] = {0}, RContainer[0x18] = {0};
-    TSharedPtr<FObfuscator>      Obfsctr;
+    static constexpr uint16                  Gmax_Size = 0x40;
+    TSharedPtr<FSlateImageBrush>             FlagBrush,              QuestionBrush,        BombBrush;
+    uint16                                   NumMines = 0x0,         FreeTilesCount = 0x0, ClickedTiles = 0x0;
+    uint16                                   CurrRowSize = 0xc,      CurrColSize = 0xc;
+    uint16                                   Ws = 0x0,               Ls = 0x0;
+    char                                     SContainer[0x18] = {0}, RContainer[0x18] = {0};
+    TSharedPtr<FObfuscator>                  Obfsctr;
+    TOptional<TSharedRef<SUniformGridPanel>> OptGridWidgetRef;
+    TArray<TSharedPtr<FString>>              DifficultyList;
 
     std::vector<TSharedRef<SButton>>    SlateGrid; /** Holds references to actual slate buttons */
     std::vector<TSharedRef<STextBlock>> TileDisplayGrid; /** Holds textblock refs for neighbour-count */
@@ -251,6 +247,12 @@ public:
     void
     LoadState();
 
+    /**
+    * @brief  Reset game / end game
+    * Pretty self-explanatory
+    **/
+    void
+    ResetGame();
 private:
     /**
      * @brief Private member variables
@@ -308,13 +310,6 @@ private:
      **/
     void
     SpreadStep(Coords TileCoords);
-
-    /**
-     * @brief  Reset game / end game
-     * Pretty self-explanatory
-     **/
-    void
-    ResetGame();
 }; /** End of FSysManager class */
 
 

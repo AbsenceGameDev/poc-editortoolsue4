@@ -1,29 +1,39 @@
-﻿   
-0b. Finish investigating the Access Violation on SpreadStep, seems to be index becomes offset and goes outside of bounds, but not sure yet.   
-   
-1d. Take input from SNumericEntryBox
-1e. Add a STextComboBox to use as selection box for difficulty
+﻿== Errors ==
+0d. Infinite loop when pressing create-game button. Not a crash, just an endless loop. Will debug.
 
-2a. Register RMB in Slate, (Override OnClick functions for SButton?)
-2b. Display QuestionBrush or FlagBrush when RMB is pressed (toggle)
+== Things to implement ==   
+1g. Update board layout and reset grid after committed value from numericbox to variable
+1h. Add a STextComboBox or SListView to use as selection box for difficulty
 
+1i. Register RMB in Slate, (Override OnClick functions for SButton?)
+1j. Display QuestionBrush or FlagBrush when RMB is pressed (toggle)
+
+== Secret/Easter-egg things ==
 3b. Create own decoder and ditch cppencode 
 (Already ditched cppencode, now only need to make own decoder in the dcde function, 
 this particular decoding is a simple algorithm of I think about 7 steps)
  
     
 ==================== DONE ===================== (This is not representative of everything, it is mostly more important objectives)
-0a. Store Total wins/losses in saved filed (Done but haven't been tested)
-1a. Fetch Correct child-slot from SDockTab (ownership chain -> SDockTab:SWrapBox:SUniformGridPanel:Button[y][x])  
-1c. Set revealed tile as clicked.
-
-3a. Secret win message is obfuscated and is read through Binder() and Flipper(), 
-    which should only be called when 5 wins during one session has been achieved.
-    
-1b. Display number on button (To use when revealed tile has minimum 1 neighbour)
-
-1e. Using SetText retroactively should still work as normal according to other, (Fixed, issue was order of access)
-
-0a. Noticed that the GridData and the GridPanel buttons array is not synced in their indices.
+== Errors ==
+0a. Using SetText retroactively should still work as normal according to other, (Fixed, issue was order of access)
+0b. Noticed that the GridData and the GridPanel buttons array is not synced in their indices.
     Same length but the iterators in the for(auto&){} was jumbling around elements, making it hard to predict.    
     Found a more fitting and more efficient solution
+0c. Finish investigating the Access Violation on SpreadStep, seems to be index becomes offset and goes outside of bounds, but not sure yet.   
+    (Fixed it, was stepping out of bounds in the negative direction)
+0d.
+
+== Things to implement ==
+1a. Store Total wins/losses in saved filed (Done but haven't been tested)
+1b. Fetch Correct child-slot from SDockTab (ownership chain -> SDockTab:SWrapBox:SUniformGridPanel:Button[y][x])  
+1c. Set revealed tile as clicked.
+1d. Display number on button (To use when revealed tile has minimum 1 neighbour)
+1e. Take input from SNumericEntryBox
+1f. Add a create Game button and bind it to ResetGame()?
+
+== Secret/Easter-egg things ==
+2a. Secret win message is obfuscated and is read through Binder() and Flipper(), 
+    which should only be called when 5 wins during one session has been achieved.
+    
+
