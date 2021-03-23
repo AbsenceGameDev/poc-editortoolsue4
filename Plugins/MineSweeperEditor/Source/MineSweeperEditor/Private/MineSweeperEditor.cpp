@@ -201,15 +201,6 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
                     break;
                 default: break;
             }
-            FString ToString = FString::FromInt(
-                ManagerShared->GetAttributes<FSysManager::NeighbourMines>(TileCoords));
-            ManagerShared->GetTileTextBlock(TileCoords)->SetText(FText::FromString(ToString));
-            auto TileWidgetPtr = ManagerShared->GetGridFSlot(TileCoords);
-            TileWidgetPtr->SetEnabled(false);
-
-            // TSharedPtr<FButtonStyle> BtnStyle;
-            // // = &FSomeStyle::Get().GetWidgetStyle<FButtonStyle>("SomeDefaultStyle");
-            // TileWidgetPtr->SetButtonStyle(BtnStyle.Get());
 
             //ObfscDobfsc
             if (ObfscDobfsc->SCW<0xc9>() && bCh) {
@@ -243,9 +234,8 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
         {
             TSharedPtr<uint8> TileDataPtr = MakeShared<uint8>(
                 ManagerShared->GridData[TileCoords.Y][TileCoords.X]);
-            FString DefaultString = FString::FromInt(
-                ManagerShared->GetAttributes<FSysManager::NeighbourMines>(TileCoords));
-            auto TextBlock = SNew(STextBlock)
+            FString DefaultString = "  ";
+            auto    TextBlock = SNew(STextBlock)
                                                                 .Text(FText::FromString(DefaultString))
                                                                 .ColorAndOpacity(FLinearColor(0, 0, 0, 1));
             //.Text(FText::FromString(DefaultString))
@@ -350,19 +340,6 @@ FSysManager::InitBtnSBrush()
     BombBrush = MakeShared<FSlateImageBrush>(FilePath + TEXT("bomb16x16.png"), FVector2D(32, 32));
 }
 
-/**
-* Refresh Tiles
-**/
-
-void
-FSysManager::RefreshTiles(Coords TileCoords)
-{
-    FText DefaultText = FText::FromString(FString::FromInt(
-        GetAttributes<FSysManager::NeighbourMines>(TileCoords)));
-    GetTileTextBlock(TileCoords)->SetText(DefaultText);
-    GetGridFSlot(TileCoords)->SetEnabled(false);
-}
-
 /*
  * Get reference to specific Slate SUniformGridPanel::FSlot
  * How to resolve a 2d index to 1d;
@@ -395,6 +372,7 @@ FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
             ReplaceMine(TileCoords);
         } else {
             Ls += 0x1 * (!Obfsctr->DC());
+            DisplayBombs();
             for (auto & TileWidget : SlateGrid) {
                 TileWidget.Get().SetEnabled(false);
             }
@@ -406,16 +384,6 @@ FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
     }
     /** path to handle checking tile and freeing it */
     SpreadStep(TileCoords);
-
-    uint16_t Idx1d = 0x0;
-    for (auto & TileRow : GridData) {
-        for (auto & TileData : TileRow) {
-            if ((TileData >> EBitField::IsClicked) & 1UL) {
-                SlateGrid[Idx1d]->SetEnabled(false);
-            }
-        }
-        Idx1d += 1;
-    }
     return EGameState::P;
 }
 
@@ -582,11 +550,41 @@ FSysManager::CheckNeighbours(const Coords TileCoords)
             }
             TileCoordsLocal.X = TileCoords.X + RowMod;
             TileCoordsLocal.Y = TileCoords.Y + ColMod;
+            if (TileCoordsLocal.X < 0 || TileCoordsLocal.X > CurrRowSize ||
+                TileCoordsLocal.Y < 0 || TileCoordsLocal.Y > CurrColSize) {
+                continue; // Not efficient
+            }
             NeighbourCountLocal += GetAttributes<EBitField::IsMine>(
                 TileCoordsLocal);
         }
     }
     SetAttributes<EBitField::NeighbourMines>(TileCoords, NeighbourCountLocal);
+    if (!GetAttributes<EBitField::IsMine>(TileCoords)) {
+        FString ToString = FString::FromInt(
+            GetAttributes<FSysManager::NeighbourMines>(TileCoords));
+        GetTileTextBlock(TileCoords)->SetText(FText::FromString(ToString));
+        SlateGrid[TileCoords.X + (CurrRowSize * TileCoords.Y)]->SetEnabled(false);
+    }
+}
+
+/*
+* Display BombTiles
+*/
+void
+FSysManager::DisplayBombs()
+{
+    uint8  NeighbourCountLocal = 0;
+    Coords TileCoords;
+    for (auto ColMod = 0x0; ColMod < CurrColSize; ColMod++) {
+        TileCoords.Y = ColMod;
+        for (auto RowMod = 0x0; RowMod < CurrRowSize; RowMod++) {
+            TileCoords.X = RowMod;
+            if (GetAttributes<EBitField::IsMine>(TileCoords)) {
+                FString ToString = "X";
+                GetTileTextBlock(TileCoords)->SetText(FText::FromString(ToString));
+            }
+        }
+    }
 }
 
 /*
@@ -674,6 +672,18 @@ FSysManager::SpreadStep(Coords TileCoords)
 void
 FSysManager::ResetGame()
 {
+    for(auto& TileWidget : SlateGrid ) {
+        TileWidget->SetEnabled(true);
+    }
+    for(auto& TextBlock: TileDisplayGrid) {
+        TextBlock->SetText(FText::FromString(" "));
+    }
+    for(auto& TileRow: GridData) {
+        for (auto& TileData: TileRow) {
+            TileData = 0x0;
+        }
+    }
+    PlaceMines();
 }
 
 // Please Ignore haha

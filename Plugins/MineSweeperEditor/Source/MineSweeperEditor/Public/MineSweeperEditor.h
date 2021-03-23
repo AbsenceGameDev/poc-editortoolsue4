@@ -135,32 +135,24 @@ public:
     static constexpr uint16      Gmax_Size = 0x40;
     TSharedPtr<FSlateImageBrush> FlagBrush,              QuestionBrush,        BombBrush;
     uint16                       NumMines = 0x0,         FreeTilesCount = 0x0, ClickedTiles = 0x0;
-    uint16                       CurrRowSize = 0x8,      CurrColSize = 0x8;
+    uint16                       CurrRowSize = 0xc,      CurrColSize = 0xc;
     uint16                       Ws = 0x0,               Ls = 0x0;
     char                         SContainer[0x18] = {0}, RContainer[0x18] = {0};
     TSharedPtr<FObfuscator>      Obfsctr;
 
-    std::vector<TSharedRef<SButton>> SlateGrid; /** Holds references to actual slate buttons */
+    std::vector<TSharedRef<SButton>>    SlateGrid; /** Holds references to actual slate buttons */
     std::vector<TSharedRef<STextBlock>> TileDisplayGrid; /** Holds textblock refs for neighbour-count */
+
+    /**
+     * @brief Grid Data array.
+     * @note 64^2 bytes = 4kb, on a mcu it would be unacceptable, on a pc cpu with megabytes of cache it's negligible \n\n
+     * Per element:\n
+     * bit[0] = isMine?\n bit[1] = Clicked?\n bit[2] = HasFlag?\n
+     * bit[3] = HasQuestionMark?\n bits[7,4] = Neighbour Mines Count
+     * @note Don't be scared by the notation above; as this does not regard actual bitfields but instead regard values,
+     *       and uses bit operators to access these "fields".
+     **/
     std::array<std::array<uint8, Gmax_Size>, Gmax_Size> GridData = {0};
-    // std::array<std::array<SBitField, Gmax_Size>, Gmax_Size> GridSBitFieldData = {0};
-    /* 64^2 bytes = 4kb, on a mcu it would be unacceptable, on a pc cpu with megabytes of cache it's negligible
-                                            Per element:	bit[0] = isMine?; bit[1] = Clicked?; bit[2] = HasFlag?
-                                                            bit[3] = HasQuestionMark?; bits[7,4] = Neighbour Mines Count */
-
-
-    // Inside Construct
-    // SNew(STextBlock).Text(this, &SMyWidget::GetText)
-
-    // Inside your widget class
-    FText
-    GetText(Coords TileCoords) const
-    {
-        FText Text =
-            FText::FromString(FString::FromInt(GetAttributes<EBitField::NeighbourMines>(TileCoords)));
-        return Text;
-    }
-
 
     /**
      * @brief Public member enums
@@ -198,12 +190,6 @@ public:
      */
     void
     InitBtnSBrush();
-
-    /**
-     * @brief Refresh Tiles
-     *
-     **/
-    void RefreshTiles(Coords TileCoords);
 
     /**
      * @brief Get reference to specific Slate SUniformGridPanel::FSlot
@@ -307,6 +293,12 @@ private:
      **/
     void
     CheckNeighbours(const Coords TileCoords);
+
+    /**
+     * @brief Display BombTiles
+     **/
+    void
+    DisplayBombs();
 
     /**
      * @brief  Spread from clicked tile

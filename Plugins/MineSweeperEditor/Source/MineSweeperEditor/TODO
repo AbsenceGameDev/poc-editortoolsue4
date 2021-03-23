@@ -1,9 +1,8 @@
-﻿0a. Noticed that the GridData and the GridPanel buttons array is not synced in their indices.
-    Same length but the vectors internal memory management seems to be jumbling around the vectors indices  
-   
+﻿   
 0b. Finish investigating the Access Violation on SpreadStep, seems to be index becomes offset and goes outside of bounds, but not sure yet.   
    
-1d. Take input from input box
+1d. Take input from SNumericEntryBox
+1e. Add a STextComboBox to use as selection box for difficulty
 
 2a. Register RMB in Slate, (Override OnClick functions for SButton?)
 2b. Display QuestionBrush or FlagBrush when RMB is pressed (toggle)
@@ -24,3 +23,7 @@ this particular decoding is a simple algorithm of I think about 7 steps)
 1b. Display number on button (To use when revealed tile has minimum 1 neighbour)
 
 1e. Using SetText retroactively should still work as normal according to other, (Fixed, issue was order of access)
+
+0a. Noticed that the GridData and the GridPanel buttons array is not synced in their indices.
+    Same length but the iterators in the for(auto&){} was jumbling around elements, making it hard to predict.    
+    Found a more fitting and more efficient solution
