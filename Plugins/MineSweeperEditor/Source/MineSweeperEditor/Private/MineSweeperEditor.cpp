@@ -550,10 +550,11 @@ FSysManager::CheckNeighbours(const Coords TileCoords)
             }
             TileCoordsLocal.X = TileCoords.X + RowMod;
             TileCoordsLocal.Y = TileCoords.Y + ColMod;
-            if (TileCoordsLocal.X < 0 || TileCoordsLocal.X > CurrRowSize ||
-                TileCoordsLocal.Y < 0 || TileCoordsLocal.Y > CurrColSize) {
-                continue; // Not efficient
-            }
+            bool bBoundsCond = (TileCoordsLocal.X < 0 || TileCoordsLocal.X > CurrRowSize ||
+                                TileCoordsLocal.Y < 0 || TileCoordsLocal.Y > CurrColSize);
+
+            if (bBoundsCond) { continue; }
+
             NeighbourCountLocal += GetAttributes<EBitField::IsMine>(
                 TileCoordsLocal);
         }
@@ -672,14 +673,14 @@ FSysManager::SpreadStep(Coords TileCoords)
 void
 FSysManager::ResetGame()
 {
-    for(auto& TileWidget : SlateGrid ) {
+    for (auto & TileWidget : SlateGrid) {
         TileWidget->SetEnabled(true);
     }
-    for(auto& TextBlock: TileDisplayGrid) {
+    for (auto & TextBlock : TileDisplayGrid) {
         TextBlock->SetText(FText::FromString(" "));
     }
-    for(auto& TileRow: GridData) {
-        for (auto& TileData: TileRow) {
+    for (auto & TileRow : GridData) {
+        for (auto & TileData : TileRow) {
             TileData = 0x0;
         }
     }
