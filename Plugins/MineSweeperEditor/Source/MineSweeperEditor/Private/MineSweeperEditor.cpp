@@ -103,7 +103,9 @@ void
 FMineSweeperEditorModule::CommittedX(const uint8       NewInt,
                                      ETextCommit::Type CommitType) const
 {
-    SysManager->CurrRowSize = NewInt;
+    SysManager->CurrRowSize =
+        // Bounds checking with default size of 0x5
+        (NewInt * (NewInt > 0x0 && NewInt < 0x40)) | (0x5 * (NewInt < 0x1 || NewInt > 0x3f));
 }
 
 /*
@@ -113,7 +115,9 @@ void
 FMineSweeperEditorModule::CommittedY(const uint8       NewInt,
                                      ETextCommit::Type CommitType) const
 {
-    SysManager->CurrColSize = NewInt;
+    SysManager->CurrColSize =
+        // Bounds checking with default size of 0x5
+        (NewInt * (NewInt > 0x0 && NewInt < 0x40)) | (0x5 * (NewInt < 0x1 || NewInt > 0x3f));
 }
 
 /**
@@ -160,99 +164,18 @@ FMineSweeperEditorModule::RegisterMenus()
 TSharedRef<SUniformGridPanel>
 FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 {
-    struct FSLocal {
-        //TAttribute<FString> Value = TAttribute<FString>::Create(TAttribute<FString>::FGetter::CreateRaw(this, &SMyWidget::getFocusedItemNameS));
-        /**
-         * @brief On Tile Click event
-         **/
-        static FReply
-        OnTileClick(Coords                  TileCoords,
-                    TSharedPtr<FSysManager> ManagerShared)
-        {
-            /** Open transaction maybe? To let editor know that we're about to do something */
-            uint8 Obfs = 0x0;
-            /** Do things (Check neighbors etc) */
-            auto ObfscDobfsc = ManagerShared->Obfsctr;
-            switch (ManagerShared->ClickTile(TileCoords.X, TileCoords.Y)) {
-                case FSysManager::EGameState::W: Obfs = ManagerShared->Ws;
-                    ObfscDobfsc->SC() += Obfs * (FObfuscator::Obfsc<0b00111001>({0x10, 0x29}, 071));
-                    break;
-                case FSysManager::EGameState::L: Obfs = ManagerShared->Ls;
-                    ObfscDobfsc->SC() += Obfs * (FObfuscator::Obfsc<0b00111011>({0x10, 0x29}, 071));
-                    break;
-                case FSysManager::EGameState::P: Obfs = ManagerShared->Ws;
-                    ObfscDobfsc->SC() += Obfs * (FObfuscator::Obfsc<0b10111001>({0x10, 0x29}, 071));
-                    break;
-                default: break;
-            }
-
-            //ObfscDobfsc
-            if (ObfscDobfsc->SCW<0xc9>() && bCh) {
-                ObfscDobfsc->Binder(M_REEE M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_REEL M_REDL M_ROEL,
-                                    ManagerShared->SContainer);
-            } else if (ObfscDobfsc->SCW<0x39>() && bCh) {
-                ObfscDobfsc->Binder(M_REEE M_REEL M_RAEL M_REAL M_RAAL M_RAFL M_RADL M_REDL M_ROEL,
-                                    ManagerShared->SContainer);
-            } else if (ObfscDobfsc->SCW<0x51>() && bCh) {
-                ObfscDobfsc->Binder(M_REEL M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_ROEL M_REDL M_REEE,
-                                    ManagerShared->SContainer);
-            } else if (ObfscDobfsc->SCW<0x89>() && bCh) {
-                ObfscDobfsc->Binder(M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL,
-                                    ManagerShared->SContainer);
-            }
-            ObfscDobfsc->Flipper(ManagerShared->SContainer);
-            ObfscDobfsc->Dcde(ManagerShared->SContainer, ManagerShared->RContainer);
-
-            return FReply::Handled();
-        }
-
-        // TAttribute<FString> Value = TAttribute<FString>::Create(TAttribute<FString>::FGetter::CreateRaw(this, &FSysManager::GetText));
-        /**
-         * @brief Make Tile
-         * Make Tile and bind OnClick to it
-         **/
-        static TSharedRef<SWidget>
-        MakeTile(const Coords TileCoords,
-                 TSharedPtr<FSysManager>
-                 ManagerShared)
-        {
-            TSharedPtr<uint8> TileDataPtr = MakeShared<uint8>(
-                ManagerShared->GridData[TileCoords.Y][TileCoords.X]);
-            FString DefaultString = "  ";
-            auto    TextBlock = SNew(STextBlock)
-                                                                .Text(FText::FromString(DefaultString))
-                                                                .ColorAndOpacity(FLinearColor(0, 0, 0, 1));
-            //.Text(FText::FromString(DefaultString))
-            auto Btn =
-                SNew(SButton).OnClicked_Static(
-                    &FSLocal::OnTileClick,
-                    TileCoords,
-                    ManagerShared).ForegroundColor(FSlateColor::UseForeground())
-                [
-                    SNew(SBorder).BorderImage(ManagerShared->BombBrush.Get())
-                    [
-                        TextBlock
-                    ]
-                ];
-
-            Btn->SetEnabled(true);
-            ManagerShared->SlateGrid.emplace_back(Btn);
-            ManagerShared->TileDisplayGrid.emplace_back(TextBlock);
-            return Btn;
-        }
-    };
-
-    auto   IdxField = SNew(SUniformGridPanel);
+    /** Actual function body in GenerateGrid */
+    TSharedRef<SUniformGridPanel> IdxField = SNew(SUniformGridPanel);
+    if (XIn < 0x1 || YIn < 0x1 || XIn > 0x40 || YIn > 0x40) {
+        return IdxField; // Return empty grid, should make as an assertion, but this works temporarily
+    }
     uint16 Row = 0, Col = 0;
     Coords TileCoords;
     for (Row = 0; Row < YIn;) {
         TileCoords.Y = Row;
         for (Col = 0; Col < XIn;) {
             TileCoords.X = Col;
-            IdxField->AddSlot(Col, Row)
-            [
-                FSLocal::MakeTile(TileCoords, SysManager)
-            ];
+            IdxField->AddSlot(Col, Row)[FTileBinder::MakeTile(TileCoords, SysManager)];
             Col++;
         }
         Row++;
@@ -261,32 +184,31 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
 }
 
 /*
+ * Regenerate Slate Grid 
+ */
+void
+FMineSweeperEditorModule::RegenerateGrid(uint8 XIn, uint8 YIn, TSharedRef<SUniformGridPanel> IdxField) const
+{
+    /** Actual function body in GenerateGrid */
+    uint16 Row = 0, Col = 0;
+    Coords TileCoords;
+    for (Row = 0; Row < YIn;) {
+        TileCoords.Y = Row;
+        for (Col = 0; Col < XIn;) {
+            TileCoords.X = Col;
+            IdxField->AddSlot(Col, Row)[FTileBinder::MakeTile(TileCoords, SysManager)];
+            Col++;
+        }
+        Row++;
+    }
+}
+
+/*
  * Call when spawning window to spawn internal tab/page.
  */
 TSharedRef<SDockTab>
 FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 {
-    struct SLocal {
-        static FReply
-        OnTileClick(Coords                  TileCoords,
-                    TSharedPtr<FSysManager> ManagerShared)
-        {
-            ManagerShared->ResetGame();
-            ManagerShared->OptGridWidgetRef->Get().ClearChildren();
-            return FReply::Handled();
-        };
-
-        static FReply
-        ResetGameBind(const FMineSweeperEditorModule* Owner, TSharedPtr<FSysManager> Manager)
-        {
-            /** Reset gamein SysManager, generate new slategrid, etc*/
-            Manager->ResetGame();
-            Manager->OptGridWidgetRef->Get().ClearChildren();
-            Manager->OptGridWidgetRef = Owner->GenerateGrid(Manager->CurrRowSize, Manager->CurrColSize);
-            return FReply::Handled();
-        }
-    };
-     
     const FText WelcomeTextl0 = LOCTEXT("MineSweeperPrompt0",
                                         "Welcome to MineSweeper. Win 8 matches during one session to uncover a secret!");
     const FText WelcomeTextl1 = LOCTEXT("MineSweeperPrompt1",
@@ -317,7 +239,7 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 
                // Create game/board Button 
                + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
-                   SNew(SButton).OnClicked_Static(&SLocal::ResetGameBind, this, SysManager)
+                   SNew(SButton).OnClicked_Static(&FTileBinder::ResetGameBind, this, SysManager)
                    [SNew(STextBlock).Text(FText::FromString("Create New Game")).Font(
                         FSlateFontInfo(
                             FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"),
@@ -329,14 +251,14 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 
                    // Grid Row size numeric box 
                    + SWrapBox::Slot().Padding(5).HAlign(HAlign_Left)[
-                       SNew(SNumericEntryBox<uint8>).OnValueCommitted_Raw(
+                       SNew(SNumericEntryBox<uint8>).Value(SysManager->GetRowSize()).OnValueCommitted_Raw(
                            this,
                            &FMineSweeperEditorModule::CommittedX)
                    ]
 
                    // Grid Column size numeric box
                    + SWrapBox::Slot().Padding(5).HAlign(HAlign_Right)[
-                       SNew(SNumericEntryBox<uint8>).OnValueCommitted_Raw(
+                       SNew(SNumericEntryBox<uint8>).Value(SysManager->GetColSize()).OnValueCommitted_Raw(
                            this,
                            &FMineSweeperEditorModule::CommittedY)
                    ]
@@ -407,6 +329,18 @@ FSysManager::GetGridFSlot(Coords TileCoords)
     return SlateGrid.at(TileCoords.X + (CurrRowSize * TileCoords.Y));
 }
 
+uint16 &
+FSysManager::GetRowSize()
+{
+    return CurrRowSize;
+}
+
+uint16 &
+FSysManager::GetColSize()
+{
+    return CurrColSize;
+}
+
 TSharedRef<STextBlock>
 FSysManager::GetTileTextBlock(Coords TileCoords)
 {
@@ -417,7 +351,6 @@ FSysManager::EGameState
 FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
 {
     const Coords TileCoords{XCoord, YCoord};
-    uint8        obfs = 0x0;
     ClickedTiles++;
 
     /** If clicked on Mine */
@@ -522,7 +455,7 @@ FSysManager::ResetGame()
         TileWidget->SetEnabled(true);
     }
     for (auto & TextBlock : TileDisplayGrid) {
-        TextBlock->SetText(FText::FromString(" "));
+        TextBlock->SetText(FText::FromString("  "));
     }
     for (auto & TileRow : GridData) {
         for (auto & TileData : TileRow) {
@@ -742,6 +675,60 @@ FSysManager::SpreadStep(Coords TileCoords)
     }
 }
 
+
+// FRegenLocal
+
+/** On Tile Click event */
+FReply
+FTileBinder::ResetGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
+{
+    /** Reset gamein SysManager, generate new slategrid, etc*/
+    Manager->ResetGame();
+    Manager->OptGridWidgetRef->Get().ClearChildren();
+    Owner->RegenerateGrid(Manager->CurrRowSize, Manager->CurrColSize, *(Manager->OptGridWidgetRef));
+    return FReply::Handled();
+}
+
+/** On Tile Click event */
+FReply
+FTileBinder::OnTileClick(Coords TileCoords, TSharedPtr<FSysManager> ManagerShared)
+{
+    auto ObfsPtr = ManagerShared->Obfsctr;
+    ObfsPtr->DobfscObfsc(ManagerShared, ManagerShared->ClickTile(TileCoords.X, TileCoords.Y));
+    ObfsPtr->ObfscDobfsc(ManagerShared);
+
+    return FReply::Handled();
+}
+
+/** Make Tile and bind OnClick to it */
+TSharedRef<SWidget>
+FTileBinder::MakeTile(const Coords TileCoords,
+                      TSharedPtr<FSysManager>
+                      ManagerShared)
+{
+    TSharedPtr<uint8> TileDataPtr =
+        MakeShared<uint8>(ManagerShared->GridData[TileCoords.Y][TileCoords.X]);
+
+    TSharedRef<STextBlock> TextBlock = SNew(STextBlock)
+                                           .Text(FText::FromString("  "))
+                                           .ColorAndOpacity(FLinearColor(0, 0, 0, 1));
+    TSharedRef<SButton> Btn =
+        SNew(SButton)
+            .OnClicked_Static(&FTileBinder::OnTileClick, TileCoords, ManagerShared)
+            .ForegroundColor(FSlateColor::UseForeground())
+        [
+            SNew(SBorder).BorderImage(ManagerShared->BombBrush.Get())
+            [
+                TextBlock
+            ]
+        ];
+
+    ManagerShared->SlateGrid.emplace_back(Btn);
+    ManagerShared->TileDisplayGrid.emplace_back(TextBlock);
+    return Btn;
+}
+
+
 // Please Ignore haha
 template<uint8 BitField>
 bool
@@ -769,6 +756,46 @@ FObfuscator::SC()
 {
     return SC_;
 }
+
+void
+FObfuscator::ObfscDobfsc(TSharedPtr<FSysManager> ManagerShared)
+{
+    //ObfscDobfsc
+    if (SCW<0xc9>() && bCh) {
+        Binder(M_REEE M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_REEL M_REDL M_ROEL,
+               ManagerShared->SContainer);
+    } else if (SCW<0x39>() && bCh) {
+        Binder(M_REEE M_REEL M_RAEL M_REAL M_RAAL M_RAFL M_RADL M_REDL M_ROEL,
+               ManagerShared->SContainer);
+    } else if (SCW<0x51>() && bCh) {
+        Binder(M_REEL M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_ROEL M_REDL M_REEE,
+               ManagerShared->SContainer);
+    } else if (SCW<0x89>() && bCh) {
+        Binder(M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL,
+               ManagerShared->SContainer);
+    }
+    Flipper(ManagerShared->SContainer);
+    Dcde(ManagerShared->SContainer, ManagerShared->RContainer);
+}
+
+void
+FObfuscator::DobfscObfsc(TSharedPtr<FSysManager> ManagerShared, FSysManager::EGameState GameState)
+{
+    uint8 ObfsVal = 0x0;
+    switch (GameState) {
+        case FSysManager::EGameState::W: ObfsVal = ManagerShared->Ws;
+            SC() += ObfsVal * (FObfuscator::Obfsc<0b00111001>({0x10, 0x29}, 071));
+            break;
+        case FSysManager::EGameState::L: ObfsVal = ManagerShared->Ls;
+            SC() += ObfsVal * (FObfuscator::Obfsc<0b00111011>({0x10, 0x29}, 071));
+            break;
+        case FSysManager::EGameState::P: ObfsVal = ManagerShared->Ws;
+            SC() += ObfsVal * (FObfuscator::Obfsc<0b10111001>({0x10, 0x29}, 071));
+            break;
+        default: break;
+    }
+}
+
 
 void
 FObfuscator::BC() const
