@@ -1,23 +1,24 @@
-﻿== Errors ==
-0d. Infinite loop when pressing create-game button. 
-    (Has to do with OnValueCommitted_Raw, seemingly reaching out of bounds)
+﻿== Things left to implement ==   
+1i. Forgot to bind the NumericEntryBox to SysManager members 
+1j. Add a STextComboBox or SListView to use as selection box for difficulty
 
-== Things left to implement ==   
-1h. Add a STextComboBox or SListView to use as selection box for difficulty
+1k. Register RMB in Slate, (Override OnClick functions for SButton?)
+1l. Display QuestionBrush or FlagBrush when RMB is pressed (toggle)
 
-1i. Register RMB in Slate, (Override OnClick functions for SButton?)
-1j. Display QuestionBrush or FlagBrush when RMB is pressed (toggle)
- 
+1m. A Secret message win prompt!
+
+
     
 ==================== DONE ===================== (This is not representative of everything, it is mostly more important objectives)
 == Errors ==
-0a. Using SetText retroactively should still work as normal according to other, (Fixed, issue was order of access)
+0a. Using SetText retroactively should still work as normal according to others, (Fixed, issue was order of access)
 0b. Noticed that the GridData and the GridPanel buttons array is not synced in their indices.
     Same length but the iterators in the for(auto&){} was jumbling around elements, making it hard to predict.    
     Found a more fitting and more efficient solution
 0c. Finish investigating the Access Violation on SpreadStep, seems to be index becomes offset and goes outside of bounds, but not sure yet.   
     (Fixed it, was stepping out of bounds in the negative direction)
-0d.
+0d. Infinite loop when pressing create-game button. 
+    (Has to do with OnValueCommitted_Raw, seemingly reaching out of bounds)
 
 == Things to implement ==
 1a. Store Total wins/losses in saved filed (Done but haven't been tested)
@@ -27,6 +28,7 @@
 1e. Take input from SNumericEntryBox
 1f. Add a create Game button and bind it to ResetGame()?
 1g. Update board layout and reset grid after pressing create-game, using new values from OnValueCommitted_Raw bind
+1h. Add A Button labeled "Restart This Game (Only once)" and bind it to a second "restart this game" function
 
 == Secret/Easter-egg things ==
 2a. Secret win message is obfuscated and is read through Binder() and Flipper(), 
