@@ -35,6 +35,7 @@ class FObfuscator;
 class FToolBarBuilder;
 class FMenuBuilder;
 struct FSlateImageBrush;
+class SUniformGridPanel;
 
 // Simple type(s)
 using Coords = struct {

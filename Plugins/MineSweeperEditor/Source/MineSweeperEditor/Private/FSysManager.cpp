@@ -18,9 +18,47 @@
  * @function void SaveState(), LoadState()
  * @function uint8 GetAttributes<FSysManager::EBitField>(const Coords);
  * @function void SetAttributes<FSysManager::EBitField>(const Coords, const uint8);
- * @function void ResetGame() 
+ * @function void ResetGame()
  * 
  **/
+// get value to display in SNumericEntryBox
+TOptional<uint16>
+FSysManager::DisplayColSize() const
+{
+    return NextColSize;
+}
+
+// get value to display in SNumericEntryBox
+TOptional<uint16>
+FSysManager::DisplayRowSize() const
+{
+    return NextRowSize;
+}
+
+// Set Value
+void
+FSysManager::RowSizeCommitted(float NewRowSize)
+{
+    NextRowSize = NewRowSize;
+    // return FReply::Handled();
+}
+
+// Set Value
+void
+FSysManager::ColSizeCommitted(float NewColSize)
+{
+    NextColSize = NewColSize;
+    // Update CurrColSize = NextColSize at create new game event
+    // return FReply::Handled();
+}
+
+void
+FSysManager::UpdateGridSize()
+{
+    CurrColSize = NextColSize;
+    CurrRowSize = NextRowSize;
+}
+
 
 FSysManager::FSysManager()
 {
@@ -185,6 +223,7 @@ FSysManager::LoadState()
 void
 FSysManager::ResetGame()
 {
+    UpdateGridSize();
     for (auto & TileWidget : SlateGrid) {
         TileWidget->SetEnabled(true);
     }
@@ -198,6 +237,7 @@ FSysManager::ResetGame()
     }
     SlateGrid.clear();
     TileDisplayGrid.clear();
+    SetDifficulty<FSysManager::Normal>(); // Will bind this later
     PlaceMines();
 }
 
@@ -314,9 +354,7 @@ FSysManager::CheckNeighbours(const Coords TileCoords)
     for (auto & RowMod : NeighbourCheck) {
         TileCoordsLocal.X = TileCoords.X + RowMod;
         for (auto & ColMod : NeighbourCheck) {
-            if (RowMod == 0 && ColMod == 0) {
-                continue;
-            }
+            if (RowMod == 0 && ColMod == 0) { continue; }
             TileCoordsLocal.Y = TileCoords.Y + ColMod;
             bool bBoundsCond = (TileCoordsLocal.X < 0 || TileCoordsLocal.X > CurrRowSize ||
                                 TileCoordsLocal.Y < 0 || TileCoordsLocal.Y > CurrColSize);
@@ -357,9 +395,10 @@ FSysManager::DisplayBombs()
 
 /*
  * Spread step, expands from give tile coords
- * @note reassigning tiles with logical operators due to it already being a recursively called function,
- *       having if's here would add much risk for branch-prediction bottleneck,
- *       and this is the 'heaviest' function in the game-manager, might as-well make it a bit more performant
+ * @note Reassigning tiles with logical operators instead of if-statements.
+ *       Having if's here would add risk for branch-prediction bottlenecks on larger boards,
+ *       (We have a max time-complexity of O(n^k) for the actual search,
+ *        therefore we should try to lessen other possible bottlenecks, like branchprediction)
  */
 void
 FSysManager::SpreadStep(Coords TileCoords)
@@ -377,8 +416,8 @@ FSysManager::SpreadStep(Coords TileCoords)
     auto GridSize = CurrRowSize * CurrColSize;
 
     uint8 Step = 0;
-    bool  backtracker = true;
-    while (backtracker) {
+    bool  bBacktracker = true;
+    while (bBacktracker) {
         for (auto & RowMod : NeighbourCheck) {
             for (auto & ColMod : NeighbourCheck) {
                 if (RowMod == 0 && ColMod == 0) {
@@ -428,9 +467,7 @@ FSysManager::SpreadStep(Coords TileCoords)
                 }
             }
         }
-        if (Step >= 0x2 && (CurrentTilePath.size() == 0x1)) {
-            backtracker = false;
-        }
+        bBacktracker = !(Step >= 0x2 && (CurrentTilePath.size() == 0x1));
     }
 }
 

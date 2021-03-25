@@ -1,5 +1,17 @@
-﻿== Things left to implement ==   
-1i. Forgot to bind the NumericEntryBox to SysManager members 
+﻿== Error ==
+0f. Hang when doing these steps: 
+    0. Open mineSwweper window and change values
+    1. Press "Create Game"
+    2. Close MineSweeper Window
+    3. Open MineSweeper window again 
+    4. Change values on Slider(s)
+    5. Press "Create Game"
+    6. Voila, froze the engine. 
+        It is likely related to input events from the computer,
+        causing multiple delegates to be fired on different threads, causing the engine to lock up.
+   Solution: Look into engine source for SSlider impl. 
+
+== Things left to implement ==   
 1j. Add a STextComboBox or SListView to use as selection box for difficulty
 
 1k. Register RMB in Slate, (Override OnClick functions for SButton?)
@@ -19,6 +31,8 @@
     (Fixed it, was stepping out of bounds in the negative direction)
 0d. Infinite loop when pressing create-game button. 
     (Has to do with OnValueCommitted_Raw, seemingly reaching out of bounds)
+0e. Click event being sent to both function-pointers at once, causing a hang in the editor
+    Solution, either override SNumericEntryBox OnValueCommitted or use an SSlider to circumvent the issue
 
 == Things to implement ==
 1a. Store Total wins/losses in saved filed (Done but haven't been tested)
@@ -29,6 +43,7 @@
 1f. Add a create Game button and bind it to ResetGame()?
 1g. Update board layout and reset grid after pressing create-game, using new values from OnValueCommitted_Raw bind
 1h. Add A Button labeled "Restart This Game (Only once)" and bind it to a second "restart this game" function
+1i. Forgot to bind the NumericEntryBox to SysManager members 
 
 == Secret/Easter-egg things ==
 2a. Secret win message is obfuscated and is read through Binder() and Flipper(), 

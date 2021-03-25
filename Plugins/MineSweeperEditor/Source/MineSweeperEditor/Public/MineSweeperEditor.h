@@ -19,24 +19,24 @@
 #include <vector>
 
 /**
-* @brief  Game module
-*
-**/
+ * @brief  Game module
+ *
+ **/
 class FMineSweeperEditorModule : public IModuleInterface {
 public:
 
     /**
-    * @brief Public member variables
-    * 
-    **/
-    TSharedPtr<FSysManager>             SysManager;
+     * @brief Public member variables
+     * 
+     **/
+    TSharedPtr<FSysManager> SysManager;
     // TSharedPtr<SNumericEntryBox<uint8>> NumbericBoxX{};
     // TSharedPtr<SNumericEntryBox<uint8>> NumbericBoxY{};
 
     /**
-    * @brief Public member functions
-    * 
-    **/
+     * @brief Public member functions
+     * 
+     **/
     FMineSweeperEditorModule();
 
     /** IModuleInterface overrides */
@@ -48,25 +48,25 @@ public:
     /**
      * @brief Brings up main plugin window
      * @note This function will be bound to Command
-     */
+     **/
     void
     TabBtnClicked() const;
 
     /**
-    * @brief Commit text from text-box 1 to value
-    * @param NewInt New display value
-    * @param CommitType
-    * @note set value when keyboard input
-    */
+     * @brief Commit text from text-box 1 to value
+     * @param NewInt New display value
+     * @param CommitType
+     * @note set value when keyboard input
+     **/
     void
     CommittedX(const uint8 NewInt, ETextCommit::Type CommitType) const;
 
     /**
-    * @brief Commit text from text-box 1 to value
-    * @param NewInt New display value
-    * @param CommitType
-    * @note set value when keyboard input
-    */
+     * @brief Commit text from text-box 1 to value
+     * @param NewInt New display value
+     * @param CommitType
+     * @note set value when keyboard input
+     **/
     void
     CommittedY(const uint8 NewInt, ETextCommit::Type CommitType) const;
 
@@ -75,54 +75,48 @@ public:
 private:
 
     /**
-    * @brief Private member variables
-    * 
-    **/
+     * @brief Private member variables
+     * 
+     **/
     TSharedPtr<class FUICommandList> PluginCmds;
 
     /**
-    * @brief Private member functions
-    * 
-    **/
+     * @brief Private member functions
+     * 
+     **/
 
     /**
-    * @brief Register level editor menu
-    **/
+     * @brief Register level editor menu
+     **/
     void
     RegisterMenus();
 
     /**
-    * @brief Bound to reset button
-    **/
-    // FReply
-    // ResetGameBind();
-
-    /**
-    * @brief Generate Slate Grid 
-    * @param XIn Grid Row Size
-    * @param YIn Grid Column Size
-    * @note FSLocal - Local container to create and bind function \n
-    * FSLocal::OnTileClick(const Coords, TSharedPtr<FSysManager>) \n
-    * FSLocal::MakeTile(const Coords, TSharedPtr<FSysManager>)
-    * @return Shared reference of Grid panel, type: TSharedRef<SUniformGridPanel>
-    **/
+     * @brief Generate Slate Grid 
+     * @param XIn Grid Row Size
+     * @param YIn Grid Column Size
+     * @note FSLocal - Local container to create and bind function \n
+     * FSLocal::OnTileClick(const Coords, TSharedPtr<FSysManager>) \n
+     * FSLocal::MakeTile(const Coords, TSharedPtr<FSysManager>)
+     * @return Shared reference of Grid panel, type: TSharedRef<SUniformGridPanel>
+     **/
     TSharedRef<class SUniformGridPanel>
     GenerateGrid(uint8 XIn, uint8 YIn) const;
 
 
     /**
-    * @brief Call when spawning window to spawn internal tab/page.
-    * @param SpawnTabArgs
-    **/
+     * @brief Call when spawning window to spawn internal tab/page.
+     * @param SpawnTabArgs
+     **/
     TSharedRef<class SDockTab>
     OnSpawnTab(const class FSpawnTabArgs & SpawnTabArgs) const;
 }; /** End of FMineSweeperEditorModule class */
 
 
 /**
-* @brief  public delegate container
-*
-**/
+ * @brief  public delegate container
+ *
+ **/
 struct FTileBinder {
     /** Reset Game event */
     static FReply

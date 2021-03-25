@@ -92,6 +92,18 @@ public:
     void
     InitBtnSBrush();
 
+    TOptional<uint16>
+    DisplayColSize() const;
+    TOptional<uint16>
+    DisplayRowSize() const;
+    void
+    RowSizeCommitted(float NewRowSize);
+    void
+    ColSizeCommitted(float NewRowSize);
+    void
+    UpdateGridSize();
+
+
     /**
      * @brief Get reference to specific Slate SUniformGridPanel::FSlot
      * @param TileCoords Position struct, x & y coordinates
@@ -188,11 +200,12 @@ private:
      * 
      **/
     TSharedPtr<FObfuscator>                  Obfsctr;
-    TOptional<TSharedRef<class SUniformGridPanel>> OptGridWidgetRef; /** Hold reference to the actual Slate Grid */
-    std::vector<TSharedRef<SButton>>         SlateGrid; /** Holds references to actual slate buttons on the grid */
-    std::vector<TSharedRef<STextBlock>>      TileDisplayGrid; /** Holds button-textblock refs for neighbour-count */
+    TOptional<TSharedRef<SUniformGridPanel>> OptGridWidgetRef; /** Ref to the actual Grid-Widget */
+    std::vector<TSharedRef<SButton>>         SlateGrid; /** Refs to actual tile-widgets on the grid */
+    std::vector<TSharedRef<STextBlock>>      TileDisplayGrid; /** Button-textblock refs for neighbour-count */
     std::vector<int>                         NeighbourCheck = {0x0, -0x1, +0x1};
     bool                                     bPlaySameAgain = true;
+    uint16                                   NextRowSize = 0xc, NextColSize = 0xc;
 
 
     /**

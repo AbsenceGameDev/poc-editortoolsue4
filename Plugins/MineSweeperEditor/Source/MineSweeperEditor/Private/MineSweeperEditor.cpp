@@ -16,6 +16,7 @@
 #include "Interfaces/IPluginManager.h"
 #include "Slate/SlateTextures.h"
 #include "ToolMenus.h"
+#include "Widgets/Input/SSlider.h"
 
 static const FName GMineSweeperEditorTabName("MineSweeperEditor");
 
@@ -242,17 +243,23 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
     return SNew(SDockTab).TabRole(ETabRole::NomadTab)
            [
                SNew(SWrapBox).PreferredWidth(300.f)
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
+               [
                    SNew(STextBlock).Text(WelcomeTextl0)
                ]
 
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
+               [
                    SNew(STextBlock).Text(WelcomeTextl1)
                ]
 
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
+               [
                    SNew(STextBlock).Text(WelcomeTextl2)
-               ] + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+               ]
+
+               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
+               [
                    // List difficulty options, bind selected/clicked item to 
                    SNew(SListView<TSharedPtr<FString>>)
                        .ItemHeight(24)
@@ -262,7 +269,8 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
                ]
 
                // Create New Game/Board Button 
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
+               [
                    SNew(SWrapBox)
                    + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
                    [
@@ -292,24 +300,80 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
                    SNew(SWrapBox)
 
                    // Grid Row size numeric box 
-                   + SWrapBox::Slot().Padding(5).HAlign(HAlign_Left)[
-                       SNew(SNumericEntryBox<uint8>).Value(SysManager->GetRowSize()).OnValueCommitted_Raw(
-                           this,
-                           &FMineSweeperEditorModule::CommittedX)
+                   + SWrapBox::Slot().Padding(10).HAlign(HAlign_Center)
+                   [
+                       SNew(SBox)
+                       .HeightOverride(20)
+                       .WidthOverride(300)
+                       [
+                           SNew(SWrapBox).PreferredWidth(300)
+                           + SWrapBox::Slot().Padding(2)
+                           [
+                               SNew(STextBlock).Text(FText::FromString("Row Size"))
+                           ]
+                           + SWrapBox::Slot().Padding(2)
+                           [
+                               SNew(SNumericEntryBox<uint16>).Value_Raw(SysManager.Get(), &FSysManager::DisplayRowSize) 
+                           ]
+                           
+                           + SWrapBox::Slot().Padding(5)
+                           [
+                               SNew(SBox)
+                                .HeightOverride(20)
+                                .WidthOverride(300)
+                               [
+                                   SNew(SSlider)
+                                    .StepSize(0x1)
+                                    .MinValue(0x1)
+                                    .MaxValue(SysManager->Gmax_Size)
+                                    .Orientation(EOrientation::Orient_Horizontal)
+                                    .Visibility(EVisibility::Visible)
+                                    .Locked(false)
+                                    .OnValueChanged_Raw(SysManager.Get(), &FSysManager::RowSizeCommitted)
+                               ]
+                           ]
+                           
+                       ]
                    ]
 
                    // Grid Column size numeric box
-                   + SWrapBox::Slot().Padding(5).HAlign(HAlign_Right)[
-                       SNew(SNumericEntryBox<uint8>).Value(SysManager->GetColSize()).OnValueCommitted_Raw(
-                           this,
-                           &FMineSweeperEditorModule::CommittedY)
+                   + SWrapBox::Slot().Padding(10).HAlign(HAlign_Center)
+                   [
+                       SNew(SWrapBox).PreferredWidth(300)
+                       + SWrapBox::Slot().Padding(2)
+                       [
+                           SNew(STextBlock).Text(FText::FromString("Colum Size")) 
+                       ]
+
+                       + SWrapBox::Slot().Padding(2)
+                       [
+                           SNew(SNumericEntryBox<uint16>).Value_Raw(SysManager.Get(), &FSysManager::DisplayColSize) 
+                       ]
+                       
+                       + SWrapBox::Slot().Padding(5)
+                       [
+                           SNew(SBox)
+                            .HeightOverride(20)
+                            .WidthOverride(300)
+                           [
+                               SNew(SSlider)
+                                .StepSize(0x1)
+                                .MinValue(0x1)
+                                .MaxValue(SysManager->Gmax_Size)
+                                .Orientation(EOrientation::Orient_Horizontal)
+                                .Visibility(EVisibility::Visible)
+                                .Locked(false)
+                                .OnValueChanged_Raw(SysManager.Get(), &FSysManager::ColSizeCommitted)
+                           ]
+                       ]
+                       
                    ]
                ]
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
+               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
+               [
                    // TSharedPtr<SUniformGridPanel>::
-                   *(SysManager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>()) = GenerateGrid(
-                       SysManager->CurrRowSize,
-                       SysManager->CurrColSize)
+                   *(SysManager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>())
+                   = GenerateGrid(SysManager->CurrRowSize, SysManager->CurrColSize)
                ]
            ];
 }
@@ -320,7 +384,7 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 FReply
 FTileBinder::ResetGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
 {
-    /** Reset gamein SysManager, generate new slategrid, etc*/
+    /** Reset game in SysManager, generate new slategrid, etc*/
     Manager->ResetGame();
     Manager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>()->Get().ClearChildren();
     Owner->RegenerateGrid(Manager->CurrRowSize,
@@ -334,7 +398,7 @@ FTileBinder::ResetGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FS
 FReply
 FTileBinder::RestartGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
 {
-    /** Reset gamein SysManager, generate new slategrid, etc*/
+    /** Restart last game in SysManager, generate new slategrid, etc*/
     if (!Manager->GetPrivateMemberRef<FSysManager::BoolPlayAgain>()) {
         return FReply::Unhandled();
     }
