@@ -424,7 +424,7 @@ FSysManager::SpreadStep(Coords TileCoords)
     // Checking for already clicked will reduce the complexity of the spread-search, as different paths won't overlap
     if (GetAttributes<EBitField::IsClicked>(TileCoords)) { return; }
     SetAttributes<EBitField::IsClicked>(TileCoords, 0x1);
-    
+
     CheckNeighbours(TileCoords);
     if (GetAttributes<EBitField::NeighbourMines>(TileCoords) > 0x0) { return; }
 
@@ -467,11 +467,18 @@ FSysManager::SpreadStep(Coords TileCoords)
 
                 const bool bCanStep = GetAttributes<EBitField::NeighbourMines>(TileCoords) == 0x0 &&
                                       GetAttributes<EBitField::IsClicked>(TileCoords) == 0x0;
+                const bool bPathEmpty = CurrentTilePath.empty();
+                const bool bLastStep = Step == 0x2;
 
                 /** go back one step if step can't contniue in any direction */
-                if (Step == 0x2 && bCantStep && (CurrentTilePath.size() > 0x1)) {
+                if (bLastStep && bCantStep && !bPathEmpty) {
                     TileCoords = CurrentTilePath.back(); // Reset tile, go to next step
                     CurrentTilePath.pop_back();
+                    break;
+                }
+                if (Step == 0x2 && bCantStep && bPathEmpty) {
+                    TileCoords = LastTile;
+                    CurrentTilePath.emplace_back(TileCoords); // Reset tile, go to next step
                     break;
                 }
 
@@ -488,7 +495,7 @@ FSysManager::SpreadStep(Coords TileCoords)
                 }
             }
         }
-        bBacktracker = !(Step >= 0x2 && (CurrentTilePath.size() == 0x1));
+        bBacktracker = !(Step >= 0x2 && (CurrentTilePath.size() == 0x1 || CurrentTilePath.empty()));
     }
 }
 

@@ -3,6 +3,10 @@
     Observation - When pressing a tile with 0 mines as neighbours, it expands improperly:
                    - if the immediate next neighbour itself has mines as neighbours, 
                      - Then it won't display that neighbours neighbourcount
+    Thoughts: I think I solved the problem, or at the very least figured out the cause.
+              So I'm likely getting into a situation where it is backing towards clicked cell, 
+              and when it reaches it it does not look at teh remaining neighbours  
+              Imagine this; StartCell->GoLeft->GoUp->HitStop->GotBack->GoLeft->HitStop->GoBack-GoDown->
 
 == Things left to implement ==   
 1j. Add a STextComboBox or SListView to use as selection box for difficulty
