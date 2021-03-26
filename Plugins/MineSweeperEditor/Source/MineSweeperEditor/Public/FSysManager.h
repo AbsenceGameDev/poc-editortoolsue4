@@ -43,7 +43,7 @@ public:
      * bit[0] = isMine?\n bit[1] = Clicked?\n bit[2] = HasFlag?\n
      * bit[3] = HasQuestionMark?\n bits[7,4] = Neighbour Mines Count
      * @note Don't be scared by the notation above; as this does not regard actual bitfields but instead regard values,
-     *       and uses bit operators to access these "fields".
+     *       and uses bit operators to access these "fields", thus it is still a fully portable solution
      **/
     std::array<std::array<uint8, Gmax_Size>, Gmax_Size> GridData = {0};
 
@@ -103,19 +103,12 @@ public:
     void
     UpdateGridSize();
 
-
     /**
      * @brief Get reference to specific Slate SUniformGridPanel::FSlot
      * @param TileCoords Position struct, x & y coordinates
      */
     TSharedRef<SButton>
     GetGridFSlot(Coords TileCoords);
-
-    uint16 &
-    GetRowSize();
-
-    uint16 &
-    GetColSize();
 
     /**
     * @brief Get reference to specific Slate Text Block
@@ -235,6 +228,18 @@ private:
      **/
     void
     ReplaceMine(Coords TileCoords);
+
+    /**
+    * @brief Check if a given tile is within bounds \n
+    * @param TileCoords Struct with coords for tile to replace
+    * Call if first tile user clicks on is a mine, a common rule in minesweeper 
+    **/
+    bool
+    CheckBounds(Coords TileCoords) const;
+    void
+    CountNeighbours(Coords TileCoords);
+    void
+    UpdateTileStyle(Coords TileCoords);
 
     /**
      * @brief  Check Neighbouring tiles for bomb-tiles

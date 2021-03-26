@@ -29,6 +29,141 @@
 
 bool bCh = false;
 
+/** Simple type(s) */
+struct CoordsT {
+    uint16 X;
+    uint16 Y;
+
+    /**
+     * Compiler by some reason (Even tho it was a very simple type)
+     * wasn't doing the logical nor arithmetic operations properly,
+     * so I had to manually define overloads for them
+     **/
+
+    /** Arithmetic operations */
+    CoordsT
+    operator =(const CoordsT & C2)
+    {
+        this->X = C2.X;
+        this->Y = C2.Y;
+        return *this;
+    }
+
+    CoordsT
+    operator +(const CoordsT & C2) const
+    {
+        return CoordsT{static_cast<uint16>(this->X + C2.X),
+                       static_cast<uint16>(this->Y + C2.Y)};
+    }
+
+    CoordsT
+    operator -(const CoordsT & C2) const
+    {
+        return CoordsT{static_cast<uint16>(this->X - C2.X),
+                       static_cast<uint16>(this->Y - C2.Y)};
+    }
+
+    CoordsT
+    operator *(const CoordsT & C2) const
+    {
+        return CoordsT{static_cast<uint16>(this->X * C2.X),
+                       static_cast<uint16>(this->Y * C2.Y)};
+    }
+
+    CoordsT
+    operator /(const CoordsT & C2) const
+    {
+        return CoordsT{static_cast<uint16>(this->X / C2.X),
+                       static_cast<uint16>(this->Y / C2.Y)};
+    }
+
+    CoordsT
+    operator %(const CoordsT & C2) const
+    {
+        return CoordsT{static_cast<uint16>(this->X % C2.X),
+                       static_cast<uint16>(this->Y % C2.Y)};
+    }
+
+    CoordsT
+    operator +=(const CoordsT & C2)
+    {
+        *this = *this + C2;
+        return *this;
+    }
+
+    CoordsT
+    operator -=(const CoordsT & C2)
+    {
+        *this = *this - C2;
+        return *this;
+    }
+
+    CoordsT
+    operator *=(const CoordsT & C2)
+    {
+        *this = *this * C2;
+        return *this;
+    }
+
+    CoordsT
+    operator /=(const CoordsT & C2)
+    {
+        *this = *this / C2;
+        return *this;
+    }
+
+    CoordsT
+    operator %=(const CoordsT & C2)
+    {
+        *this = *this % C2;
+        return *this;
+    }
+
+    // Conditional operations
+    bool
+    operator ==(const CoordsT & C2) const
+    {
+        return (this->X == C2.X &&
+                this->Y == C2.Y);
+    }
+
+    bool
+    operator !=(const CoordsT & C2) const
+    {
+        return !(*this == C2);
+    }
+
+    bool
+    operator <(const CoordsT & C2) const
+    {
+        return (this->X < C2.X &&
+                this->Y < C2.Y);
+    }
+
+    bool
+    operator >(const CoordsT & C2) const
+    {
+        return (this->X > C2.X &&
+                this->Y > C2.Y);
+    }
+
+    bool
+    operator <=(const CoordsT & C2) const
+    {
+        return !(*this > C2);
+    }
+
+    bool
+    operator >=(const CoordsT & C2) const
+    {
+        return !(*this < C2);
+    }
+
+};
+
+using Coords = CoordsT;
+
+
 // Forawrd declrs.
 class FSysManager;
 class FObfuscator;
@@ -36,20 +171,5 @@ class FToolBarBuilder;
 class FMenuBuilder;
 struct FSlateImageBrush;
 class SUniformGridPanel;
-
-// Simple type(s)
-using Coords = struct {
-    uint16 X;
-    uint16 Y;
-};
-
-using SBitField = struct {
-    uint8
-        IsMine:1,
-        IsClicked:1,
-        HasFlag:1,
-        HasQ:1,
-        NeighbourMinesCount:3;
-};
 
 #endif // MINESECRET_H

@@ -101,18 +101,6 @@ FSysManager::GetGridFSlot(Coords TileCoords)
     return SlateGrid.at(TileCoords.X + (CurrRowSize * TileCoords.Y));
 }
 
-uint16 &
-FSysManager::GetRowSize()
-{
-    return CurrRowSize;
-}
-
-uint16 &
-FSysManager::GetColSize()
-{
-    return CurrColSize;
-}
-
 TSharedRef<STextBlock>
 FSysManager::GetTileTextBlock(Coords TileCoords)
 {
@@ -138,7 +126,7 @@ FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
             }
             return EGameState::L;
         }
-    } else if (ClickedTiles == FreeTilesCount) {
+    } else if (ClickedTiles >= FreeTilesCount - 1) {
         Ws += 0x1 * (Obfsctr->CC());
         return EGameState::W;
     }
@@ -154,10 +142,10 @@ template<FSysManager::EBitField BitField>
 uint8
 FSysManager::GetAttributes(const Coords TileCoords) const
 {
-    if constexpr (BitField >= 0x4) {
-        return (GridData[TileCoords.Y][TileCoords.X] >> 4UL) & 15UL;
+    if constexpr (BitField == EBitField::NeighbourMines) {
+        return (GridData[TileCoords.Y][TileCoords.X] >> 0x4) & 0xf;
     } else {
-        return (GridData[TileCoords.Y][TileCoords.X] >> BitField) & 1UL;
+        return (GridData[TileCoords.Y][TileCoords.X] >> BitField) & 0x1;
     }
 }
 
@@ -170,12 +158,12 @@ FSysManager::SetAttributes(const Coords TileCoords, const uint8 Fieldval)
 {
     auto & TileData = GridData[TileCoords.Y][TileCoords.X];
     if constexpr (BitField == EBitField::NeighbourMines) {
-        TileData = (TileData & ~(15UL << BitField)) | ((Fieldval & 1UL) << BitField);
+        TileData = (TileData & 0xf) | ((Fieldval & 0xf) << BitField);
     }
     if constexpr (BitField == EBitField::IsMine) {
-        TileData = (TileData & ~1UL) | (Fieldval & 1UL);
+        TileData = (TileData & ~0x1) | (Fieldval & 0x1);
     } else {
-        TileData = (TileData & ~(1UL << BitField)) | ((Fieldval & 1UL) << BitField);
+        TileData = (TileData & ~(0x1 << BitField)) | ((Fieldval & 0x1) << BitField);
     }
 }
 
@@ -218,12 +206,13 @@ FSysManager::LoadState()
 }
 
 /*
-* Reset Game
+* Reset Game-board (Generating new match)
 */
 void
 FSysManager::ResetGame()
 {
     UpdateGridSize();
+    ClickedTiles = 0;
     for (auto & TileWidget : SlateGrid) {
         TileWidget->SetEnabled(true);
     }
@@ -262,6 +251,7 @@ FSysManager::RestartGame()
         }
         ColMod++;
     }
+    ClickedTiles = 0;
     SlateGrid.clear();
     TileDisplayGrid.clear();
 }
@@ -278,7 +268,7 @@ FSysManager::RestartGame()
  **/
 
 /*
- * Set Game-board difficulty
+ * Set Game-board difficulty/
  */
 template<FSysManager::EGameDifficulty Difficulty>
 void
@@ -344,33 +334,61 @@ FSysManager::ReplaceMine(Coords TileCoords)
 }
 
 /*
- * Check Neighbouring tiles for bomb-tiles
+ * Check if a given tile is within bounds
+ * Using 
  */
+bool
+FSysManager::CheckBounds(Coords TileCoords) const
+{
+    return TileCoords >= Coords{0, 0} &&
+           TileCoords < Coords{CurrRowSize, CurrColSize};
+}
+
 void
-FSysManager::CheckNeighbours(const Coords TileCoords)
+FSysManager::CountNeighbours(const Coords TileCoords)
 {
     uint8  NeighbourCountLocal = 0;
-    Coords TileCoordsLocal;
+    Coords TileCoordsLocal = {0, 0};
     for (auto & RowMod : NeighbourCheck) {
         TileCoordsLocal.X = TileCoords.X + RowMod;
         for (auto & ColMod : NeighbourCheck) {
             if (RowMod == 0 && ColMod == 0) { continue; }
             TileCoordsLocal.Y = TileCoords.Y + ColMod;
-            bool bBoundsCond = (TileCoordsLocal.X < 0 || TileCoordsLocal.X > CurrRowSize ||
-                                TileCoordsLocal.Y < 0 || TileCoordsLocal.Y > CurrColSize);
 
-            if (bBoundsCond) { continue; }
-
+            if (!CheckBounds(TileCoordsLocal)) { continue; }
             NeighbourCountLocal += GetAttributes<EBitField::IsMine>(
                 TileCoordsLocal);
         }
     }
     SetAttributes<EBitField::NeighbourMines>(TileCoords, NeighbourCountLocal);
-    if (!GetAttributes<EBitField::IsMine>(TileCoords)) {
-        GetTileTextBlock(TileCoords)->SetText(FText::FromString(FString::FromInt(
-            GetAttributes<FSysManager::NeighbourMines>(TileCoords))));
-        SlateGrid[TileCoords.X + (CurrRowSize * TileCoords.Y)]->SetEnabled(false);
+}
+
+void
+FSysManager::UpdateTileStyle(const Coords TileCoords)
+{
+    GetTileTextBlock(TileCoords)
+        ->SetText(
+            FText::FromString(
+                FString::FromInt(
+                    GetAttributes<EBitField::NeighbourMines>(TileCoords)
+                    )
+                )
+            );
+    GetGridFSlot(TileCoords)->SetEnabled(false);
+}
+
+/*
+ * Check Neighbouring tiles for bomb-tiles
+ */
+void
+FSysManager::CheckNeighbours(const Coords TileCoords)
+{
+    if (GetAttributes<EBitField::IsMine>(TileCoords)) {
+        SetAttributes<EBitField::NeighbourMines>(TileCoords, 0xf);
+        return;
     }
+    CountNeighbours(TileCoords);
+    UpdateTileStyle(TileCoords);
 }
 
 /*
@@ -404,14 +422,15 @@ void
 FSysManager::SpreadStep(Coords TileCoords)
 {
     // Checking for already clicked will reduce the complexity of the spread-search, as different paths won't overlap
-    if (GetAttributes<EBitField::IsClicked>(TileCoords)) {
-        return;
-    }
+    if (GetAttributes<EBitField::IsClicked>(TileCoords)) { return; }
     SetAttributes<EBitField::IsClicked>(TileCoords, 0x1);
+    
     CheckNeighbours(TileCoords);
+    if (GetAttributes<EBitField::NeighbourMines>(TileCoords) > 0x0) { return; }
 
     std::vector<Coords> CurrentTilePath{};
     CurrentTilePath.emplace_back(TileCoords);
+    Coords LastTile = TileCoords;
 
     auto GridSize = CurrRowSize * CurrColSize;
 
@@ -425,6 +444,7 @@ FSysManager::SpreadStep(Coords TileCoords)
                 }
                 Step = RowMod + ColMod;
 
+                LastTile = TileCoords;
                 switch (ColMod) {
                     case -0x1: TileCoords.Y -= (TileCoords.Y > 0);
                         break;
@@ -457,6 +477,7 @@ FSysManager::SpreadStep(Coords TileCoords)
 
                 /** Skip loop step if it isn't last four-way step */
                 if (bCantStep) {
+                    TileCoords = LastTile;
                     continue;
                 }
 

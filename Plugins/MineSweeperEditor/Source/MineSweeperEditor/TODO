@@ -1,15 +1,8 @@
-﻿== Error ==
-0f. Hang when doing these steps: 
-    0. Open mineSwweper window and change values
-    1. Press "Create Game"
-    2. Close MineSweeper Window
-    3. Open MineSweeper window again 
-    4. Change values on Slider(s)
-    5. Press "Create Game"
-    6. Voila, froze the engine. 
-        It is likely related to input events from the computer,
-        causing multiple delegates to be fired on different threads, causing the engine to lock up.
-   Solution: Look into engine source for SSlider impl. 
+﻿== Semantic Error ==
+0f. There seems to be that steps are not skipped properly when searching, leaving it to search a bit too little unpredictable.
+    Observation - When pressing a tile with 0 mines as neighbours, it expands improperly:
+                   - if the immediate next neighbour itself has mines as neighbours, 
+                     - Then it won't display that neighbours neighbourcount
 
 == Things left to implement ==   
 1j. Add a STextComboBox or SListView to use as selection box for difficulty
