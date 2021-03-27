@@ -1,5 +1,8 @@
-// Ario Amin - MineSweeper Goedesic Test
-
+/**
+* @file  MineSweeperEditorCommands.cpp
+* @author Ario Amin
+* @project  MineSweeper Geodesic Test
+**/
 #include "MineSweeperEditorCommands.h"
 
 #define LOCTEXT_NAMESPACE "FMineSweeperEditorModule"

@@ -1,5 +1,8 @@
-// Ario Amin - MineSweeper Goedesic Test
-
+/**
+* @file  MineSweeperEditorCommands.h
+* @author Ario Amin
+* @project  MineSweeper Geodesic Test
+**/
 #ifndef MINESWEEPER_EDITOR_COMMANDS_H
 #define MINESWEEPER_EDITOR_COMMANDS_H
 

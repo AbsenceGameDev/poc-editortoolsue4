@@ -1,5 +1,8 @@
-// Ario Amin - MineSweeper Goedesic Test
-
+/**
+* @file  MineSweeperEditorStyle.cpp
+* @author Ario Amin
+* @project  MineSweeper Geodesic Test
+**/
 #include "MineSweeperEditorStyle.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Framework/Application/SlateApplication.h"

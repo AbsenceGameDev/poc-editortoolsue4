@@ -1,5 +1,8 @@
-﻿/** Ario Amin - MineSweeper Geodesic Test */
-
+﻿/**
+* @file  FSysManager.cpp
+* @author Ario Amin
+* @project  MineSweeper Geodesic Test
+**/
 #include "FSysManager.h"
 #include "EditorReimportHandler.h"
 #include "Misc/FileHelper.h"
@@ -21,45 +24,6 @@
  * @function void ResetGame()
  * 
  **/
-// get value to display in SNumericEntryBox
-TOptional<uint16>
-FSysManager::DisplayColSize() const
-{
-    return NextColSize;
-}
-
-// get value to display in SNumericEntryBox
-TOptional<uint16>
-FSysManager::DisplayRowSize() const
-{
-    return NextRowSize;
-}
-
-// Set Value
-void
-FSysManager::RowSizeCommitted(float NewRowSize)
-{
-    NextRowSize = NewRowSize;
-    // return FReply::Handled();
-}
-
-// Set Value
-void
-FSysManager::ColSizeCommitted(float NewColSize)
-{
-    NextColSize = NewColSize;
-    // Update CurrColSize = NextColSize at create new game event
-    // return FReply::Handled();
-}
-
-void
-FSysManager::UpdateGridSize()
-{
-    CurrColSize = NextColSize;
-    CurrRowSize = NextRowSize;
-}
-
-
 FSysManager::FSysManager()
 {
     DifficultyList.Emplace(MakeShared<FString>("Easy :/"));
@@ -67,6 +31,9 @@ FSysManager::FSysManager()
     DifficultyList.Emplace(MakeShared<FString>("Hard :D"));
     DifficultyList.Emplace(MakeShared<FString>("Insane :("));
     OptGridWidgetRef = MakeShared<SUniformGridPanel>();
+    OptEndMsgRef = SNew(STextBlock); // MakeShared<STextBlock>();
+    OptStatsRef = SNew(STextBlock) MAKEROBOTO(18);
+    OptScoreRef = SNew(STextBlock) MAKEROBOTO(18);
     Obfsctr = MakeShared<FObfuscator>();
     InitBtnSBrush();
     SetDifficulty<FSysManager::Normal>();
@@ -90,19 +57,72 @@ FSysManager::InitBtnSBrush()
 }
 
 /*
+* Updating the STextBlock score-widget after a finished match
+*/
+void
+FSysManager::UpdateScoreWidget()
+{
+    (*OptScoreRef)->SetText(
+        FText::FromString("Wins: " + FString::FromInt(Ws) + "\n"
+                          + "Losses:" + FString::FromInt(Ls)));
+}
+
+// get value to display in SNumericEntryBox
+TOptional<uint16>
+FSysManager::DisplayColSize() const
+{
+    return NextColSize;
+}
+
+// get value to display in SNumericEntryBox
+TOptional<uint16>
+FSysManager::DisplayRowSize() const
+{
+    return NextRowSize;
+}
+
+FText
+FSysManager::DisplayEndMsg() const
+{
+    return FText::FromString(SContainer);
+}
+
+// Set Value
+void
+FSysManager::RowSizeCommitted(float NewRowSize)
+{
+    NextRowSize = NewRowSize;
+}
+
+// Set Value
+void
+FSysManager::ColSizeCommitted(float NewColSize)
+{
+    NextColSize = NewColSize;
+}
+
+void
+FSysManager::UpdateGridSize()
+{
+    CurrColSize = NextColSize;
+    CurrRowSize = NextRowSize;
+}
+
+
+/*
  * Get reference to specific Slate SUniformGridPanel::FSlot
  * How to resolve a 2d index to 1d;
  * Row Major, so x0y0, x1y0, x2y0, ... , xny0, x0y1, x1y1, x2y1, ... , xny1,  etc..
  * (x + xmax*y) ? Seems right
  */
 TSharedRef<SButton>
-FSysManager::GetGridFSlot(Coords TileCoords)
+FSysManager::GetGridFSlot(FCoords TileCoords)
 {
     return SlateGrid.at(TileCoords.X + (CurrRowSize * TileCoords.Y));
 }
 
 TSharedRef<STextBlock>
-FSysManager::GetTileTextBlock(Coords TileCoords)
+FSysManager::GetTileTextBlock(FCoords TileCoords)
 {
     return TileDisplayGrid.at(TileCoords.X + (CurrRowSize * TileCoords.Y));
 }
@@ -110,26 +130,31 @@ FSysManager::GetTileTextBlock(Coords TileCoords)
 FSysManager::EGameState
 FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
 {
-    const Coords TileCoords{XCoord, YCoord};
+    const FCoords TileCoords{XCoord, YCoord};
     ClickedTiles++;
-
     /** If clicked on Mine */
     if (GetAttributes<EBitField::IsMine>(TileCoords)) {
         /** If first tile is clicked */
         if (ClickedTiles == 0x1) {
             ReplaceMine(TileCoords);
         } else {
-            Ls += 0x1 * (!Obfsctr->DC());
+            Ls += 0x1 * (Obfsctr->CC());
             DisplayBombs();
             for (auto & TileWidget : SlateGrid) {
                 TileWidget.Get().SetEnabled(false);
             }
+            ClickedTiles--;
+            (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
             return EGameState::L;
         }
-    } else if (ClickedTiles >= FreeTilesCount - 1) {
-        Ws += 0x1 * (Obfsctr->CC());
+    } else if (ClickedTiles > FreeTilesCount) {
+        Ws += 0x1 * (!Obfsctr->DC());
+        for (auto & TileWidget : SlateGrid) {
+            TileWidget.Get().SetEnabled(false);
+        }
         return EGameState::W;
     }
+    (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
     /** path to handle checking tile and freeing it */
     SpreadStep(TileCoords);
     return EGameState::P;
@@ -140,7 +165,7 @@ FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
  */
 template<FSysManager::EBitField BitField>
 uint8
-FSysManager::GetAttributes(const Coords TileCoords) const
+FSysManager::GetAttributes(const FCoords TileCoords) const
 {
     if constexpr (BitField == EBitField::NeighbourMines) {
         return (GridData[TileCoords.Y][TileCoords.X] >> 0x4) & 0xf;
@@ -154,7 +179,7 @@ FSysManager::GetAttributes(const Coords TileCoords) const
  */
 template<FSysManager::EBitField BitField>
 void
-FSysManager::SetAttributes(const Coords TileCoords, const uint8 Fieldval)
+FSysManager::SetAttributes(const FCoords TileCoords, const uint8 Fieldval)
 {
     auto & TileData = GridData[TileCoords.Y][TileCoords.X];
     if constexpr (BitField == EBitField::NeighbourMines) {
@@ -201,8 +226,8 @@ FSysManager::LoadState()
     }
     uint8 TotalArr[4] = {0};
     FilePtr->Read(&TotalArr[0x0], 0x4);
-    Ws = (TotalArr[0] << 0x8) | TotalArr[1];
-    Ls = (TotalArr[2] << 0x8) | TotalArr[3];
+    Ws = (static_cast<uint16>(TotalArr[0]) << 0x8) | static_cast<uint16>(TotalArr[1]);
+    Ls = (static_cast<uint16>(TotalArr[2]) << 0x8) | static_cast<uint16>(TotalArr[3]);
 }
 
 /*
@@ -217,7 +242,7 @@ FSysManager::ResetGame()
         TileWidget->SetEnabled(true);
     }
     for (auto & TextBlock : TileDisplayGrid) {
-        TextBlock->SetText(FText::FromString("  "));
+        TextBlock->SetText(FText::FromString("_"));
     }
     for (auto & TileRow : GridData) {
         for (auto & TileData : TileRow) {
@@ -228,6 +253,7 @@ FSysManager::ResetGame()
     TileDisplayGrid.clear();
     SetDifficulty<FSysManager::Normal>(); // Will bind this later
     PlaceMines();
+    (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
 }
 
 /*
@@ -240,7 +266,7 @@ FSysManager::RestartGame()
         TileWidget->SetEnabled(true);
     }
     for (auto & TextBlock : TileDisplayGrid) {
-        TextBlock->SetText(FText::FromString("  "));
+        TextBlock->SetText(FText::FromString("_"));
     }
     for (uint16 ColMod = 0x0; ColMod < CurrColSize;) {
         for (uint16 RowMod = 0x0; RowMod < CurrRowSize;) {
@@ -252,6 +278,7 @@ FSysManager::RestartGame()
         ColMod++;
     }
     ClickedTiles = 0;
+    (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
     SlateGrid.clear();
     TileDisplayGrid.clear();
 }
@@ -297,7 +324,7 @@ FSysManager::PlaceMines()
     const auto GridSize = CurrRowSize * CurrColSize;
 
     /** Continue until all random mines have been created. */
-    for (int PlacedCount = 0; PlacedCount < NumMines;) {
+    for (int PlacedCount = 0; PlacedCount <= NumMines;) {
         const auto   Random = FMath::RandRange(0x0, GridSize);
         const uint16 X = Random / CurrRowSize;
         const uint16 Y = Random % CurrColSize;
@@ -315,7 +342,7 @@ FSysManager::PlaceMines()
  * Replace a given mine tile 
  */
 void
-FSysManager::ReplaceMine(Coords TileCoords)
+FSysManager::ReplaceMine(FCoords TileCoords)
 {
     if (!GetAttributes<EBitField::IsMine>({TileCoords.X, TileCoords.Y})) {
         return; /** Already no mine here, function called by mistake */
@@ -338,17 +365,17 @@ FSysManager::ReplaceMine(Coords TileCoords)
  * Using 
  */
 bool
-FSysManager::CheckBounds(Coords TileCoords) const
+FSysManager::CheckBounds(FCoords TileCoords) const
 {
-    return TileCoords >= Coords{0, 0} &&
-           TileCoords < Coords{CurrRowSize, CurrColSize};
+    return TileCoords >= FCoords{0, 0} &&
+           TileCoords < FCoords{CurrRowSize, CurrColSize};
 }
 
 void
-FSysManager::CountNeighbours(const Coords TileCoords)
+FSysManager::CountNeighbours(const FCoords TileCoords)
 {
     uint8  NeighbourCountLocal = 0;
-    Coords TileCoordsLocal = {0, 0};
+    FCoords TileCoordsLocal;
     for (auto & RowMod : NeighbourCheck) {
         TileCoordsLocal.X = TileCoords.X + RowMod;
         for (auto & ColMod : NeighbourCheck) {
@@ -361,10 +388,14 @@ FSysManager::CountNeighbours(const Coords TileCoords)
         }
     }
     SetAttributes<EBitField::NeighbourMines>(TileCoords, NeighbourCountLocal);
+    if (!GetAttributes<EBitField::IsClicked>(TileCoords) && NeighbourCountLocal > 0x0) {
+        SetAttributes<EBitField::IsClicked>(TileCoords, 0x1);
+        ClickedTiles++;
+    }
 }
 
 void
-FSysManager::UpdateTileStyle(const Coords TileCoords)
+FSysManager::UpdateTileStyle(const FCoords TileCoords)
 {
     GetTileTextBlock(TileCoords)
         ->SetText(
@@ -381,7 +412,7 @@ FSysManager::UpdateTileStyle(const Coords TileCoords)
  * Check Neighbouring tiles for bomb-tiles
  */
 void
-FSysManager::CheckNeighbours(const Coords TileCoords)
+FSysManager::CheckNeighbours(const FCoords TileCoords)
 {
     if (GetAttributes<EBitField::IsMine>(TileCoords)) {
         SetAttributes<EBitField::NeighbourMines>(TileCoords, 0xf);
@@ -397,8 +428,7 @@ FSysManager::CheckNeighbours(const Coords TileCoords)
 void
 FSysManager::DisplayBombs()
 {
-    uint8  NeighbourCountLocal = 0;
-    Coords TileCoords;
+    FCoords TileCoords;
     for (auto ColMod = 0x0; ColMod < CurrColSize; ColMod++) {
         TileCoords.Y = ColMod;
         for (auto RowMod = 0x0; RowMod < CurrRowSize; RowMod++) {
@@ -419,7 +449,7 @@ FSysManager::DisplayBombs()
  *        therefore we should try to lessen other possible bottlenecks, like branchprediction)
  */
 void
-FSysManager::SpreadStep(Coords TileCoords)
+FSysManager::SpreadStep(FCoords TileCoords)
 {
     // Checking for already clicked will reduce the complexity of the spread-search, as different paths won't overlap
     if (GetAttributes<EBitField::IsClicked>(TileCoords)) { return; }
@@ -428,11 +458,8 @@ FSysManager::SpreadStep(Coords TileCoords)
     CheckNeighbours(TileCoords);
     if (GetAttributes<EBitField::NeighbourMines>(TileCoords) > 0x0) { return; }
 
-    std::vector<Coords> CurrentTilePath{};
+    std::vector<FCoords> CurrentTilePath{};
     CurrentTilePath.emplace_back(TileCoords);
-    Coords LastTile = TileCoords;
-
-    auto GridSize = CurrRowSize * CurrColSize;
 
     uint8 Step = 0;
     bool  bBacktracker = true;
@@ -444,22 +471,17 @@ FSysManager::SpreadStep(Coords TileCoords)
                 }
                 Step = RowMod + ColMod;
 
-                LastTile = TileCoords;
-                switch (ColMod) {
-                    case -0x1: TileCoords.Y -= (TileCoords.Y > 0);
-                        break;
-                    case 0x1: TileCoords.Y += (TileCoords.Y < (CurrColSize - 1));
-                        break;
-                    default: break;
-                }
+                const FCoords LastTile = TileCoords;
 
-                switch (RowMod) {
-                    case -0x1: TileCoords.X -= (TileCoords.X > 0);
-                        break;
-                    case 0x1: TileCoords.X += (TileCoords.X < (CurrRowSize - 1));
-                        break;
-                    default: break;
-                }
+                // Branchless switch,
+                // because I already have too many if-blocks in this nested loop as it is
+                TileCoords.Y +=
+                    ((TileCoords.Y < (CurrColSize - 1)) * (ColMod == 0x1)) -
+                    ((TileCoords.Y > 0) * (ColMod == -0x1));
+
+                TileCoords.X +=
+                    ((TileCoords.X < (CurrRowSize - 1)) * (RowMod == 0x1)) -
+                    ((TileCoords.X > 0) * (RowMod == -0x1));
 
                 CheckNeighbours(TileCoords);
                 const bool bCantStep = GetAttributes<EBitField::NeighbourMines>(TileCoords) > 0x0 ||
@@ -476,7 +498,7 @@ FSysManager::SpreadStep(Coords TileCoords)
                     CurrentTilePath.pop_back();
                     break;
                 }
-                if (Step == 0x2 && bCantStep && bPathEmpty) {
+                if (bLastStep && bCantStep && bPathEmpty) {
                     TileCoords = LastTile;
                     CurrentTilePath.emplace_back(TileCoords); // Reset tile, go to next step
                     break;
@@ -491,42 +513,32 @@ FSysManager::SpreadStep(Coords TileCoords)
                 if (bCanStep) {
                     CurrentTilePath.emplace_back(TileCoords);
                     SetAttributes<EBitField::IsClicked>(TileCoords, 0x1);
+                    ClickedTiles++;
                     break;
                 }
             }
         }
         bBacktracker = !(Step >= 0x2 && (CurrentTilePath.size() == 0x1 || CurrentTilePath.empty()));
     }
+    (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
 }
 
 // Please Ignore haha
 template<uint8 BitField>
 bool
-FObfuscator::Obfsc(const Coords TileCoords, const uint8 Fieldval)
-{
-    return (TileCoords.X & TileCoords.Y) == (BitField & Fieldval);
-}
-
+FObfuscator::Obfsc(const FCoords TileCoords, const uint8 Fieldval)
+{return (TileCoords.X & TileCoords.Y) == (BitField & Fieldval);}
+void
+FObfuscator::PC() { VC(); }
+template<uint8 BitField>
 bool
-FObfuscator::CC() const
-{
-    *static_cast<uint8 *>(cW) = 0x0;
-    return true;
-}
-
+FObfuscator::SCW(){return Obfsc<BitField>({0x10, 0x29}, 071) && (SC() >= 0b1000 && bConsW);}
 bool
-FObfuscator::DC() const
-{
-    *static_cast<uint8 *>(cW) = 0x1;
-    return false;
-}
-
-uint8 &
-FObfuscator::SC()
-{
-    return SC_;
-}
-
+FObfuscator::CC() const{*static_cast<uint8 *>(cW) = 0x0;return true;}
+bool
+FObfuscator::DC() const{*static_cast<uint8 *>(cW) = 0x1;return false;}
+void
+FObfuscator::VC() { SC() = 0x0; }
 void
 FObfuscator::ObfscDobfsc(TSharedPtr<FSysManager> ManagerShared)
 {
@@ -547,50 +559,31 @@ FObfuscator::ObfscDobfsc(TSharedPtr<FSysManager> ManagerShared)
     Flipper(ManagerShared->SContainer);
     Dcde(ManagerShared->SContainer, ManagerShared->RContainer);
 }
-
 void
 FObfuscator::DobfscObfsc(TSharedPtr<FSysManager> ManagerShared, FSysManager::EGameState GameState)
 {
-    uint8 ObfsVal = 0x0;
     switch (GameState) {
-        case FSysManager::EGameState::W: ObfsVal = ManagerShared->Ws;
-            SC() += ObfsVal * (FObfuscator::Obfsc<0b00111001>({0x10, 0x29}, 071));
+        case FSysManager::EGameState::W: SC() += (FObfuscator::Obfsc<0b00111001>({0x10, 0x29}, 071));
             break;
-        case FSysManager::EGameState::L: ObfsVal = ManagerShared->Ls;
-            SC() += ObfsVal * (FObfuscator::Obfsc<0b00111011>({0x10, 0x29}, 071));
+        case FSysManager::EGameState::L: SC() += (FObfuscator::Obfsc<0b00111011>({0x10, 0x29}, 071));
             break;
-        case FSysManager::EGameState::P: ObfsVal = ManagerShared->Ws;
-            SC() += ObfsVal * (FObfuscator::Obfsc<0b10111001>({0x10, 0x29}, 071));
+        case FSysManager::EGameState::P: SC() += (FObfuscator::Obfsc<0b10111001>({0x10, 0x29}, 071));
             break;
         default: break;
     }
 }
-
+uint8 &
+FObfuscator::SC(){return SC_;}
 void
-FObfuscator::BC() const
-{
-    *static_cast<uint8 *>(bW) = 0x0;
-}
-
-
-template<uint8 BitField>
-bool
-FObfuscator::SCW()
-{
-    return Obfsc<BitField>({0x10, 0x29}, 071) && (SC() >= 0b1000 && bConsW);
-}
-
+FObfuscator::BC() const{*static_cast<uint8 *>(bW) = 0x0;}
 void
-FObfuscator::BW()
-{
-    bW = static_cast<void *>(&bConsW);
-}
-
+FObfuscator::CB() const{*static_cast<uint8 *>(cW) = 0x0;}
 void
-FObfuscator::DW()
-{
-    cW = static_cast<void *>(&bCh);
-}
+FObfuscator::BF() const{*static_cast<uint8 *>(bW) = 0xff;}
+void
+FObfuscator::BW(){SC() <<= 0x8;bW = static_cast<void *>(&bConsW);}
+void
+FObfuscator::DW(){cW = static_cast<void *>(&bCh);}
 
 #undef LOCTEXT_NAMESPACE
 //IMPLEMENT_MODULE(FMineSweeperEditorModule, MineSweeperEditor)

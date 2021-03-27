@@ -1,4 +1,10 @@
-﻿#ifndef MINESECRET_H
+﻿/**
+* @file  MineSecret.h
+* @brief  #defines and FCoordsT definition
+* @author Ario Amin
+* @project  MineSweeper Geodesic Test
+**/
+#ifndef MINESECRET_H
 #define MINESECRET_H
 
 // Shall thee findeth mine own secret?
@@ -27,93 +33,108 @@
 #define MFox M_REEL M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_ROEL M_REDL M_REEE
 #define MFaks M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL
 
+
+/** @note  FREETILES is ONLY to be used within member functions of class FSysManager */
+#define FREETILES FreeTilesCount - ClickedTiles
+
+/** @note  MAKEROBOTO is ONLY to be used Slate widgets that, when created through SNew(), have the member function .Font(...)  */
+#define MAKEROBOTO(FontSize) .Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), FontSize))
+#define ROBOTOARG(FontSize) (FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), FontSize))
+/** @note  MAKETEXT is ONLY to be used Slate widgets that, when created through SNew(), have the member function .Text(...) */
+#define MAKETEXT(InString) .Text(FText::FromString( InString ))
+#define TEXTARG(InString) (FText::FromString( InString ))
+/** @note  INT_TEXT is ONLY to be used Slate widgets that, when created through SNew(),
+ *   have the member function .Text(...) as-well as an integer to read as text*/
+#define MAKENUMTEXT(InInt) .Text(FText::FromString( FString::FromInt(InInt)))
+#define NUMTEXTARG(InInt) (FText::FromString( FString::FromInt(InInt))) 
+
 bool bCh = false;
 
 /** Simple type(s) */
-struct CoordsT {
+struct FCoordsT {
     uint16 X;
     uint16 Y;
 
     /**
      * Compiler by some reason (Even tho it was a very simple type)
-     * wasn't doing the logical nor arithmetic operations properly,
+     * It wasn't doing the logical nor arithmetic operations properly,
      * so I had to manually define overloads for them
      **/
 
     /** Arithmetic operations */
-    CoordsT
-    operator =(const CoordsT & C2)
+    FCoordsT
+    operator =(const FCoordsT & C2)
     {
         this->X = C2.X;
         this->Y = C2.Y;
         return *this;
     }
 
-    CoordsT
-    operator +(const CoordsT & C2) const
+    FCoordsT
+    operator +(const FCoordsT & C2) const
     {
-        return CoordsT{static_cast<uint16>(this->X + C2.X),
+        return FCoordsT{static_cast<uint16>(this->X + C2.X),
                        static_cast<uint16>(this->Y + C2.Y)};
     }
 
-    CoordsT
-    operator -(const CoordsT & C2) const
+    FCoordsT
+    operator -(const FCoordsT & C2) const
     {
-        return CoordsT{static_cast<uint16>(this->X - C2.X),
+        return FCoordsT{static_cast<uint16>(this->X - C2.X),
                        static_cast<uint16>(this->Y - C2.Y)};
     }
 
-    CoordsT
-    operator *(const CoordsT & C2) const
+    FCoordsT
+    operator *(const FCoordsT & C2) const
     {
-        return CoordsT{static_cast<uint16>(this->X * C2.X),
+        return FCoordsT{static_cast<uint16>(this->X * C2.X),
                        static_cast<uint16>(this->Y * C2.Y)};
     }
 
-    CoordsT
-    operator /(const CoordsT & C2) const
+    FCoordsT
+    operator /(const FCoordsT & C2) const
     {
-        return CoordsT{static_cast<uint16>(this->X / C2.X),
+        return FCoordsT{static_cast<uint16>(this->X / C2.X),
                        static_cast<uint16>(this->Y / C2.Y)};
     }
 
-    CoordsT
-    operator %(const CoordsT & C2) const
+    FCoordsT
+    operator %(const FCoordsT & C2) const
     {
-        return CoordsT{static_cast<uint16>(this->X % C2.X),
+        return FCoordsT{static_cast<uint16>(this->X % C2.X),
                        static_cast<uint16>(this->Y % C2.Y)};
     }
 
-    CoordsT
-    operator +=(const CoordsT & C2)
+    FCoordsT
+    operator +=(const FCoordsT & C2)
     {
         *this = *this + C2;
         return *this;
     }
 
-    CoordsT
-    operator -=(const CoordsT & C2)
+    FCoordsT
+    operator -=(const FCoordsT & C2)
     {
         *this = *this - C2;
         return *this;
     }
 
-    CoordsT
-    operator *=(const CoordsT & C2)
+    FCoordsT
+    operator *=(const FCoordsT & C2)
     {
         *this = *this * C2;
         return *this;
     }
 
-    CoordsT
-    operator /=(const CoordsT & C2)
+    FCoordsT
+    operator /=(const FCoordsT & C2)
     {
         *this = *this / C2;
         return *this;
     }
 
-    CoordsT
-    operator %=(const CoordsT & C2)
+    FCoordsT
+    operator %=(const FCoordsT & C2)
     {
         *this = *this % C2;
         return *this;
@@ -121,47 +142,47 @@ struct CoordsT {
 
     // Conditional operations
     bool
-    operator ==(const CoordsT & C2) const
+    operator ==(const FCoordsT & C2) const
     {
         return (this->X == C2.X &&
                 this->Y == C2.Y);
     }
 
     bool
-    operator !=(const CoordsT & C2) const
+    operator !=(const FCoordsT & C2) const
     {
         return !(*this == C2);
     }
 
     bool
-    operator <(const CoordsT & C2) const
+    operator <(const FCoordsT & C2) const
     {
         return (this->X < C2.X &&
                 this->Y < C2.Y);
     }
 
     bool
-    operator >(const CoordsT & C2) const
+    operator >(const FCoordsT & C2) const
     {
         return (this->X > C2.X &&
                 this->Y > C2.Y);
     }
 
     bool
-    operator <=(const CoordsT & C2) const
+    operator <=(const FCoordsT & C2) const
     {
         return !(*this > C2);
     }
 
     bool
-    operator >=(const CoordsT & C2) const
+    operator >=(const FCoordsT & C2) const
     {
         return !(*this < C2);
     }
 
 };
 
-using Coords = CoordsT;
+using FCoords = FCoordsT;
 
 
 // Forawrd declrs.

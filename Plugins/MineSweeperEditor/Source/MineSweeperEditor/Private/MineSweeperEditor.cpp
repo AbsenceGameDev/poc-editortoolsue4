@@ -1,5 +1,8 @@
-/** Ario Amin - MineSweeper Geodesic Test */
-
+/**
+* @file  MineSweeperEditor.cpp
+* @author Ario Amin
+* @project  MineSweeper Geodesic Test
+**/
 #include "MineSweeperEditor.h"
 #include "EditorReimportHandler.h"
 #include "MineSweeperEditorStyle.h"
@@ -17,11 +20,19 @@
 #include "Slate/SlateTextures.h"
 #include "ToolMenus.h"
 #include "Widgets/Input/SSlider.h"
+#include "Widgets/Layout/SGridPanel.h"
+#include "Widgets/Layout/SScrollBox.h"
+
 
 static const FName GMineSweeperEditorTabName("MineSweeperEditor");
 
 #define LOCTEXT_NAMESPACE "MineSweeperEditorModule"
 
+/*
+ * Impl. of FSysManager::GetPrivateMemberRef
+ * Implemented here as it is used in this file and it has auto return-type,
+ *  this will make sure it is linked and compiles properly
+ */
 template<FSysManager::EPrivateMember PrivateMember>
 auto
 FSysManager::GetPrivateMemberRef() -> auto&
@@ -41,6 +52,15 @@ FSysManager::GetPrivateMemberRef() -> auto&
     if constexpr (PrivateMember == EPrivateMember::FObfsctr) {
         return Obfsctr;
     }
+    if constexpr (PrivateMember == EPrivateMember::STextEndMsgRef) {
+        return OptEndMsgRef;
+    }
+    if constexpr (PrivateMember == EPrivateMember::STextStatsRef) {
+        return OptStatsRef;
+    }
+    if constexpr (PrivateMember == EPrivateMember::STextScoreRef) {
+        return OptScoreRef;
+    }
 }
 
 /**
@@ -58,6 +78,9 @@ FMineSweeperEditorModule::FMineSweeperEditorModule()
 {
     SysManager = MakeShared<FSysManager>();
     SysManager->LoadState();
+    SysManager->UpdateScoreWidget();
+    // FCurveHandle ZoomCurve = Sequence.AddCurve( 0, 0.15f );
+    // FCurveHandle FadeCurve = Sequence.AddCurve( 0.15f, 0.1f);
 }
 
 /*
@@ -73,6 +96,7 @@ FMineSweeperEditorModule::StartupModule()
 
     PluginCmds = MakeShareable(new FUICommandList);
     SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->DW();
+    SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->SC() = 0b0;
     PluginCmds->MapAction(
         FMineSweeperEditorCommands::Get().WindowContext,
         FExecuteAction::CreateRaw(this, &FMineSweeperEditorModule::TabBtnClicked),
@@ -83,6 +107,7 @@ FMineSweeperEditorModule::StartupModule()
     UToolMenus::RegisterStartupCallback(
         FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMineSweeperEditorModule::RegisterMenus));
     SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->BC();
+    SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->CB();
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GMineSweeperEditorTabName,
                                                       FOnSpawnTab::CreateRaw(
                                                           this,
@@ -114,7 +139,7 @@ void
 FMineSweeperEditorModule::TabBtnClicked() const
 {
     FGlobalTabmanager::Get()->TryInvokeTab(GMineSweeperEditorTabName);
-    FTileBinder::ResetGameBind(this, SysManager);
+    FTileBinder::NewGameBind(this, SysManager);
 }
 
 
@@ -192,7 +217,7 @@ FMineSweeperEditorModule::GenerateGrid(uint8 XIn, uint8 YIn) const
         return IdxField; // Return empty grid, should make as an assertion, but this works temporarily
     }
     uint16 Row = 0, Col = 0;
-    Coords TileCoords;
+    FCoords TileCoords;
     for (Row = 0; Row < YIn;) {
         TileCoords.Y = Row;
         for (Col = 0; Col < XIn;) {
@@ -213,7 +238,7 @@ FMineSweeperEditorModule::RegenerateGrid(uint8 XIn, uint8 YIn, TSharedRef<SUnifo
 {
     /** Actual function body in GenerateGrid */
     uint16 Row = 0, Col = 0;
-    Coords TileCoords;
+    FCoords TileCoords;
     for (Row = 0; Row < YIn;) {
         TileCoords.Y = Row;
         for (Col = 0; Col < XIn;) {
@@ -231,158 +256,213 @@ FMineSweeperEditorModule::RegenerateGrid(uint8 XIn, uint8 YIn, TSharedRef<SUnifo
 TSharedRef<SDockTab>
 FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 {
-    // TSharedRef<SButton> TempRestartBtn = RestartGameBtn;
-    // TSharedRef<SButton> TempCreateBtn = CreateGameBtn;
+    TSharedRef<SGridPanel> MainField = SNew(SGridPanel);
+    const FText            WelcomeText = LOCTEXT("MineSweeperPrompt0",
+                                                 "Welcome to MineSweeper. \n Win 8 matches during one session to uncover a secret! \n"
+                                                 "(Win/Loss is saved, but Secret Count resets when closing the editor. \nSecret count is only applicable on hard or above. \n"
+                                                 "Please, no cheating by looking at source code. \nIn case you do, I have tried obfuscating it alot haha.)");
+    MainField->AddSlot(0x0, 0x0)
+    [
+        SNew(STextBlock).Text(WelcomeText)
+    ];
 
-    const FText WelcomeTextl0 = LOCTEXT("MineSweeperPrompt0",
-                                        "Welcome to MineSweeper. Win 8 matches during one session to uncover a secret!");
-    const FText WelcomeTextl1 = LOCTEXT("MineSweeperPrompt1",
-                                        "(Win/Loss is saved, but Secret Count resets when closing the editor. Secret count is only applicable on hard or above)");
-    const FText WelcomeTextl2 = LOCTEXT("MineSweeperPromp2",
-                                        "( Please, no cheating by looking at source code. In case you do, I have tried obfuscating it alot haha.)");
-    return SNew(SDockTab).TabRole(ETabRole::NomadTab)
-           [
-               SNew(SWrapBox).PreferredWidth(300.f)
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
-               [
-                   SNew(STextBlock).Text(WelcomeTextl0)
-               ]
+    // List difficulty options, bind selected/clicked item to 
+    // fField->AddSlot(0x2, 0x0)
+    // [
+    //     SNew(SListView<TSharedPtr<FString>>)
+    //         .ItemHeight(24)
+    //         .ListItemsSource(&SysManager->DifficultyList)
+    //     // .OnGenerateRow(SListView<TSharedPtr<FString>>::Widget)
+    //     // .OnGenerateRow(SListView<TSharedPtr<FString>>::MakeOnGenerateWidget(this, &FMineSweeperEditorModule::OnGenerateRowForList))
+    // ];
 
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
-               [
-                   SNew(STextBlock).Text(WelcomeTextl1)
-               ]
+    // Create/Restart Game Button
+    MainField->AddSlot(0x1, 0x0)
+    [
+        // Create New Game Button
+        SNew(SWrapBox)
+        + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
+        [
+            SNew(SButton).OnClicked_Static(&FTileBinder::NewGameBind, this, SysManager)
+            [
+                SNew(STextBlock)
+                MAKETEXT("Create New Game")
+                MAKEROBOTO(24)
+            ]
+        ]
 
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
-               [
-                   SNew(STextBlock).Text(WelcomeTextl2)
-               ]
+        // Restart Game/Board Button 
+        + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
+        [
+            SNew(SButton).OnClicked_Static(&FTileBinder::RestartGameBind, this, SysManager)
+            [
+                SNew(STextBlock)
+                MAKETEXT("Restart this Board! (Once per board)")
+                MAKEROBOTO(18)
+                //.Text(FText::FromString("Restart this Board! (Once per board)"))
+            ]
+        ]
+    ];
 
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
-               [
-                   // List difficulty options, bind selected/clicked item to 
-                   SNew(SListView<TSharedPtr<FString>>)
-                       .ItemHeight(24)
-                       .ListItemsSource(&SysManager->DifficultyList)
-                   // .OnGenerateRow(SListView<TSharedPtr<FString>>::Widget)
-                   // .OnGenerateRow(SListView<TSharedPtr<FString>>::MakeOnGenerateWidget(this, &FMineSweeperEditorModule::OnGenerateRowForList))
-               ]
+    // Grid/Row input
+    MainField->AddSlot(0x1, 0x1)
+    [
+        SNew(SWrapBox)
 
-               // Create New Game/Board Button 
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
-               [
-                   SNew(SWrapBox)
-                   + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
-                   [
-                       SNew(SButton).OnClicked_Static(&FTileBinder::ResetGameBind, this, SysManager)
-                       [
-                           SNew(STextBlock).Text(FText::FromString("Create New Game")).Font(
-                               FSlateFontInfo(
-                                   FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"),
-                                   24))
-                       ]
-                   ]
+        // Grid Row size numeric box 
+        + SWrapBox::Slot().Padding(10).HAlign(HAlign_Center)
+        [
+            SNew(SWrapBox).PreferredWidth(300)
+            + SWrapBox::Slot().Padding(2)
+            [
+                SNew(STextBlock)
+                MAKETEXT("Row Size")
+            ]
+            + SWrapBox::Slot().Padding(2)
+            [
+                SNew(SNumericEntryBox<uint16>).Value_Raw(
+                    SysManager.Get(),
+                    &FSysManager::DisplayRowSize)
+            ]
 
-                   // Restart Game/Board Button 
-                   + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
-                   [
-                       SNew(SButton).OnClicked_Static(&FTileBinder::RestartGameBind, this, SysManager)
-                       [
-                           SNew(STextBlock).Text(FText::FromString("Restart this Board! (Once per board)"))
-                                           .Font(FSlateFontInfo(FPaths::EngineContentDir()
-                                                                / TEXT("Slate/Fonts/Roboto-Bold.ttf"),
-                                                                18))
-                       ]
-                   ]
-               ]
+            // Row Slider
+            + SWrapBox::Slot().Padding(5)
+            [
+                SNew(SBox)
+                        .HeightOverride(20)
+                        .WidthOverride(300)
+                [
+                    SNew(SSlider)
+                            .StepSize(0x1)
+                            .MinValue(0x5)
+                            .MaxValue(SysManager->Gmax_Size)
+                            .Orientation(EOrientation::Orient_Horizontal)
+                            .Visibility(EVisibility::Visible)
+                            .Locked(false)
+                            .OnValueChanged_Raw(SysManager.Get(), &FSysManager::RowSizeCommitted)
+                ]
+            ]
+        ]
 
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)[
-                   SNew(SWrapBox)
+        // Grid Column size numeric box
+        + SWrapBox::Slot().Padding(10).HAlign(HAlign_Center)
+        [
+            SNew(SWrapBox).PreferredWidth(300)
+            + SWrapBox::Slot().Padding(2)
+            [
+                SNew(STextBlock)
+                MAKETEXT("Colum Size")
+            ]
 
-                   // Grid Row size numeric box 
-                   + SWrapBox::Slot().Padding(10).HAlign(HAlign_Center)
-                   [
-                       SNew(SBox)
-                       .HeightOverride(20)
-                       .WidthOverride(300)
-                       [
-                           SNew(SWrapBox).PreferredWidth(300)
-                           + SWrapBox::Slot().Padding(2)
-                           [
-                               SNew(STextBlock).Text(FText::FromString("Row Size"))
-                           ]
-                           + SWrapBox::Slot().Padding(2)
-                           [
-                               SNew(SNumericEntryBox<uint16>).Value_Raw(SysManager.Get(), &FSysManager::DisplayRowSize) 
-                           ]
-                           
-                           + SWrapBox::Slot().Padding(5)
-                           [
-                               SNew(SBox)
-                                .HeightOverride(20)
-                                .WidthOverride(300)
-                               [
-                                   SNew(SSlider)
-                                    .StepSize(0x1)
-                                    .MinValue(0x1)
-                                    .MaxValue(SysManager->Gmax_Size)
-                                    .Orientation(EOrientation::Orient_Horizontal)
-                                    .Visibility(EVisibility::Visible)
-                                    .Locked(false)
-                                    .OnValueChanged_Raw(SysManager.Get(), &FSysManager::RowSizeCommitted)
-                               ]
-                           ]
-                           
-                       ]
-                   ]
+            + SWrapBox::Slot().Padding(2)
+            [
+                SNew(SNumericEntryBox<uint16>).Value_Raw(
+                    SysManager.Get(),
+                    &FSysManager::DisplayColSize)
+            ]
 
-                   // Grid Column size numeric box
-                   + SWrapBox::Slot().Padding(10).HAlign(HAlign_Center)
-                   [
-                       SNew(SWrapBox).PreferredWidth(300)
-                       + SWrapBox::Slot().Padding(2)
-                       [
-                           SNew(STextBlock).Text(FText::FromString("Colum Size")) 
-                       ]
+            // Col Slider
+            + SWrapBox::Slot().Padding(5)
+            [
+                SNew(SBox)
+                        .HeightOverride(20)
+                        .WidthOverride(300)
+                [
+                    SNew(SSlider)
+                            .StepSize(0x1)
+                            .MinValue(0x5)
+                            .MaxValue(SysManager->Gmax_Size)
+                            .Orientation(EOrientation::Orient_Horizontal)
+                            .Visibility(EVisibility::Visible)
+                            .Locked(false)
+                            .OnValueChanged_Raw(SysManager.Get(), &FSysManager::ColSizeCommitted)
+                ]
+            ]
+        ]
 
-                       + SWrapBox::Slot().Padding(2)
-                       [
-                           SNew(SNumericEntryBox<uint16>).Value_Raw(SysManager.Get(), &FSysManager::DisplayColSize) 
-                       ]
-                       
-                       + SWrapBox::Slot().Padding(5)
-                       [
-                           SNew(SBox)
-                            .HeightOverride(20)
-                            .WidthOverride(300)
-                           [
-                               SNew(SSlider)
-                                .StepSize(0x1)
-                                .MinValue(0x1)
-                                .MaxValue(SysManager->Gmax_Size)
-                                .Orientation(EOrientation::Orient_Horizontal)
-                                .Visibility(EVisibility::Visible)
-                                .Locked(false)
-                                .OnValueChanged_Raw(SysManager.Get(), &FSysManager::ColSizeCommitted)
-                           ]
-                       ]
-                       
-                   ]
-               ]
-               + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
-               [
-                   // TSharedPtr<SUniformGridPanel>::
-                   *(SysManager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>())
-                   = GenerateGrid(SysManager->CurrRowSize, SysManager->CurrColSize)
-               ]
-           ];
+    ];
+
+    // Win/Loss Message
+    // replace .Text with .Text_Raw and bind it to a function which reflects changes on SContainer or R00Container
+    MainField->AddSlot(0x0, 0x1)
+    [
+        *SysManager->GetPrivateMemberRef<FSysManager::STextEndMsgRef>() =
+        SNew(STextBlock)
+        .Text_Raw(SysManager.Get(), &FSysManager::DisplayEndMsg)
+        MAKEROBOTO(38)
+    ];
+
+    // TotalScore
+    // replace .Text with .Text_Raw and bind it to a function which reflects changes on SContainer or R00Container
+    MainField->AddSlot(0x0, 0x1)
+    [
+        *SysManager->GetPrivateMemberRef<FSysManager::STextEndMsgRef>() =
+        SNew(STextBlock)
+        .Text_Raw(SysManager.Get(), &FSysManager::DisplayEndMsg)
+        MAKEROBOTO(38)
+    ];
+
+    // Show GameData == Free tiles left to click
+    // replace .Text with .Text_Raw and bind it to a function which reflects changes on SContainer or R00Container
+    MainField->AddSlot(0x2, 0x0)
+    [
+        SNew(SWrapBox)
+        + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
+        [
+            *SysManager->GetPrivateMemberRef<FSysManager::STextScoreRef>()
+        ]
+
+        + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
+        [
+            *SysManager->GetPrivateMemberRef<FSysManager::STextEndMsgRef>() =
+            SNew(STextBlock)
+            MAKETEXT("Free Tiles:")
+            MAKEROBOTO(16)
+        ]
+
+        + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
+        [
+            *SysManager->GetPrivateMemberRef<FSysManager::STextStatsRef>()
+        ]
+    ];
+
+    // Game-board / Gridpanel
+    MainField->AddSlot(0x2, 0x1).VAlign(VAlign_Fill)
+    [
+        // TSharedPtr<SUniformGridPanel>::
+        *(SysManager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>())
+        = GenerateGrid(SysManager->CurrRowSize, SysManager->CurrColSize)
+    ];
+
+    // Quick implementation of scrolling to be able to show a max-size playingboard,
+    // does cause issues in order of priority,but it is not very problematic in this case
+    return
+        SNew(SDockTab).TabRole(ETabRole::NomadTab)
+        [
+            SNew(SScrollBox).Orientation(EOrientation::Orient_Horizontal)
+            + SScrollBox::Slot()
+            [
+                SNew(SScrollBox).Orientation(EOrientation::Orient_Vertical)
+                + SScrollBox::Slot()
+                [
+                    MainField
+                ]
+            ]
+        ];
 }
 
-// FRegenLocal
+// We want to zoom in a widget, and then fade in its contents.
+// EActiveTimerReturnType
+// FMineSweeperEditorModule::TriggerTextAnim(double InCurrentTime, float InDeltaTime)
+// {
+// 
+//     return EActiveTimerReturnType::Continue;
+// }
 
-/** On Tile Click event */
+
+/** Create New Game event */
 FReply
-FTileBinder::ResetGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
+FTileBinder::NewGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
 {
     /** Reset game in SysManager, generate new slategrid, etc*/
     Manager->ResetGame();
@@ -394,14 +474,15 @@ FTileBinder::ResetGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FS
     return FReply::Handled();
 }
 
-/** On Tile Click event */
+/** Restart Game event */
 FReply
 FTileBinder::RestartGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
 {
     /** Restart last game in SysManager, generate new slategrid, etc*/
-    if (!Manager->GetPrivateMemberRef<FSysManager::BoolPlayAgain>()) {
+    if (!Manager->GetPrivateMemberRef<FSysManager::BoolPlayAgain>() || Manager->ClickedTiles == 0x0) {
         return FReply::Unhandled();
     }
+
     Manager->RestartGame();
     Manager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>()->Get().ClearChildren();
     Owner->RegenerateGrid(Manager->CurrRowSize,
@@ -413,18 +494,18 @@ FTileBinder::RestartGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<
 
 /** On Tile Click event */
 FReply
-FTileBinder::OnTileClick(Coords TileCoords, TSharedPtr<FSysManager> ManagerShared)
+FTileBinder::OnTileClick(FCoords TileCoords, TSharedPtr<FSysManager> ManagerShared)
 {
     auto ObfsPtr = ManagerShared->GetPrivateMemberRef<FSysManager::FObfsctr>();
     ObfsPtr->DobfscObfsc(ManagerShared, ManagerShared->ClickTile(TileCoords.X, TileCoords.Y));
+    ManagerShared->UpdateScoreWidget(); // Update just in-case win or loss has occured
     ObfsPtr->ObfscDobfsc(ManagerShared);
-
     return FReply::Handled();
 }
 
 /** Make Tile and bind OnClick to it */
 TSharedRef<SWidget>
-FTileBinder::MakeTile(const Coords TileCoords,
+FTileBinder::MakeTile(const FCoords TileCoords,
                       TSharedPtr<FSysManager>
                       ManagerShared)
 {
@@ -432,8 +513,8 @@ FTileBinder::MakeTile(const Coords TileCoords,
         MakeShared<uint8>(ManagerShared->GridData[TileCoords.Y][TileCoords.X]);
 
     TSharedRef<STextBlock> TextBlock = SNew(STextBlock)
-                                           .Text(FText::FromString("  "))
-                                           .ColorAndOpacity(FLinearColor(0, 0, 0, 1));
+                                       MAKETEXT("_")
+                                       .ColorAndOpacity(FLinearColor(0, 0, 0, 1));
     TSharedRef<SButton> Btn =
         SNew(SButton)
             .OnClicked_Static(&FTileBinder::OnTileClick, TileCoords, ManagerShared)

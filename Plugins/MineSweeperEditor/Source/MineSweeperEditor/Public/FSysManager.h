@@ -1,26 +1,26 @@
-﻿// Ario Amin - MineSweeper Goedesic Test
-
-/**
-* @brief FSysManager Class
-*
-* At the end of minesweeper class, below it,
-* I have included a minified and optimized version of cppcodec library (https://github.com/tplgy/cppcodec),
-* only kept the decoder. I know I should maybe have not tacked it on at the end of this header,
-* and maybe should've kept a separate header for it, but here we are now haha
-* 
-**/
+﻿/**
+ * @file  FSysManager.h
+ * @author Ario Amin
+ * @project  MineSweeper Geodesic Test
+ **/
 #ifndef FSYS_MANAGER_H
 #define FSYS_MANAGER_H
 
 #include "CoreMinimal.h"
-#include "MineSecret.h"
+
+// ReSharper disable once CppUnusedIncludeDirective
 #include "Modules/ModuleManager.h"
+#include "MineSecret.h"
 #include <array>
 #include <vector>
 
+
 /**
+ * @class FSysManager
  * @brief  General resource and game manager
- *
+ * @details Is the general Systems and Game manager.
+ * It enforces the rules for the game, loads/saves total win/loss,
+ * And it interacts with the Slate-widgets on the game-windows
  **/
 class FSysManager {
 public:
@@ -31,7 +31,7 @@ public:
     static constexpr uint16      Gmax_Size = 0x40;
     TSharedPtr<FSlateImageBrush> FlagBrush,              QuestionBrush,        BombBrush;
     uint16                       NumMines = 0x0,         FreeTilesCount = 0x0, ClickedTiles = 0x0;
-    uint16                       CurrRowSize = 0xc,      CurrColSize = 0xc;
+    uint16                       CurrRowSize = 0x5,      CurrColSize = 0x5;
     uint16                       Ws = 0x0,               Ls = 0x0;
     char                         SContainer[0x18] = {0}, RContainer[0x18] = {0};
     TArray<TSharedPtr<FString>>  DifficultyList;
@@ -51,6 +51,11 @@ public:
      * @brief Public member enums
      * 
      **/
+
+    /**
+     * @brief Game-difficulty enum
+     * @type EGameDifficulty : uint8
+     **/
     enum EGameDifficulty : uint8 {
         Easy = 0x0,
         Normal = 0x1,
@@ -58,12 +63,20 @@ public:
         Insane = 0x3
     };
 
+    /**
+     * @brief Game-state enum
+     * @type EGameState : uint8
+     **/
     enum EGameState : uint8 {
         L = 0x0,
         W = 0x1,
         P = 0x2
     };
 
+    /**
+     * @brief Data-field enum
+     * @type EBitField : uint8
+     **/
     enum EBitField : uint8 {
         IsMine = 0x0,
         IsClicked = 0x1,
@@ -72,50 +85,108 @@ public:
         NeighbourMines = 0x4,
     };
 
+    /**
+     * @brief Private-member-name enum
+     * @type EPrivateMember : uint8
+     **/
     enum EPrivateMember : uint8 {
         BoolPlayAgain = 0x0,
         VectorSlateGrid = 0x1,
         VectorTileDisplayGrid = 0x2,
         TOptGridWidgetRef = 0x3,
         FObfsctr = 0x4,
+        STextEndMsgRef = 0x5,
+        STextStatsRef = 0x6,
+        STextScoreRef = 0x7
     };
 
     /**
      * @brief Public member functions
      * 
      **/
+
+    /**
+     * @brief FSysManager constructor
+     * @details Loads some FStrinsg into a TArray<FString>,
+     * then constructing some shared pointers to some of FSysManager members 
+     **/
     FSysManager();
 
     /**
      * @brief Setting the FSlateImageBrushes with actual images
-     */
+     **/
     void
     InitBtnSBrush();
 
+    /**
+    * @brief Updating Score Widget.
+    * @details Updates the STextBlock widget,
+    * which is used for scores with current Wins/Losses.
+    **/
+    void
+    UpdateScoreWidget();
+
+    /**
+     * @brief Displays Column Size for widget.
+     * @details Is used to bind to an SNumericEntryBox through .Value()
+     * @return TOptional<uint16> Optional type which holds, if anything, a uint16. 
+     **/
     TOptional<uint16>
     DisplayColSize() const;
+
+
+    /**
+     * @brief Displays Row Size for widget.
+     * @details Is used to bind to an SNumericEntryBox through .Value()
+     * @return TOptional<uint16> Optional type which holds, if anything, a uint16. 
+     **/
     TOptional<uint16>
     DisplayRowSize() const;
+
+    /**
+     * @brief Returns End-game message for widget.
+     * @details Is used to bind to an STextBlock through .Text_Raw()
+     * @return FText containing the End-game message 
+     **/
+    FText
+    DisplayEndMsg() const;
+
+    /**
+     * @brief Assigns 'NewRowSize' to this->NextRowSize 
+     * @details Is used to bind to an STextBlock through .Text_Raw()
+     **/
     void
     RowSizeCommitted(float NewRowSize);
+
+    /**
+     * @brief Assigns 'NewColSize' to this->NextColSize 
+     * @details Is used to bind to an STextBlock through .Text_Raw()
+     * @param NewColSize
+     **/
     void
-    ColSizeCommitted(float NewRowSize);
+    ColSizeCommitted(float NewColSize);
+
+    /**
+     * @brief Updates Grid Size variables.
+     * @details Updates the members CurrRowSize and CurrColSize.
+     *  Assigns them the values of NextRowSize & NextColSize. 
+     **/
     void
     UpdateGridSize();
 
     /**
      * @brief Get reference to specific Slate SUniformGridPanel::FSlot
      * @param TileCoords Position struct, x & y coordinates
-     */
+     **/
     TSharedRef<SButton>
-    GetGridFSlot(Coords TileCoords);
+    GetGridFSlot(FCoords TileCoords);
 
     /**
-    * @brief Get reference to specific Slate Text Block
-    * @param TileCoords Position struct, x & y coordinates
-    */
+     * @brief Get reference to specific Slate Text Block
+     * @param TileCoords Position struct, x & y coordinates
+     **/
     TSharedRef<STextBlock>
-    GetTileTextBlock(Coords TileCoords);
+    GetTileTextBlock(FCoords TileCoords);
 
 
     /**
@@ -131,10 +202,10 @@ public:
      * @param TileCoords Struct with coords for tile to change attribute value in
      * @tparam BitField Enum of type FSysManager::EBitField
      * Which is an enum that has fields for each attribute
-     */
+     **/
     template<EBitField BitField>
     uint8
-    GetAttributes(const Coords TileCoords) const;
+    GetAttributes(const FCoords TileCoords) const;
 
     /**
      * @brief  Set FSysManager Attributes
@@ -145,14 +216,14 @@ public:
      **/
     template<EBitField BitField>
     void
-    SetAttributes(const Coords TileCoords, const uint8 Fieldval);
+    SetAttributes(const FCoords TileCoords, const uint8 Fieldval);
 
     /**
-    * @brief  Get FSysManager Attributes
-    * @param TileCoords Struct with coords for tile to change attribute value in
-    * @tparam BitField Enum of type FSysManager::EBitField
-    * Which is an enum that has fields for each attribute
-    */
+     * @brief  Get FSysManager Private Member References
+     * @tparam PrivateMember Enum of type FSysManager::EPrivateMember
+     * Which is an enum that has fields for several of FSysManagers private members
+     * @return -> auto&, Returns reference to given private member
+     **/
     template<EPrivateMember PrivateMember>
     auto
     GetPrivateMemberRef() -> auto&;
@@ -192,13 +263,14 @@ private:
      * @brief Private member variables
      * 
      **/
-    TSharedPtr<FObfuscator>                  Obfsctr;
-    TOptional<TSharedRef<SUniformGridPanel>> OptGridWidgetRef; /** Ref to the actual Grid-Widget */
+    bool                                     bPlaySameAgain = true;
     std::vector<TSharedRef<SButton>>         SlateGrid; /** Refs to actual tile-widgets on the grid */
     std::vector<TSharedRef<STextBlock>>      TileDisplayGrid; /** Button-textblock refs for neighbour-count */
+    TOptional<TSharedRef<SUniformGridPanel>> OptGridWidgetRef; /** Ref to the actual Grid-Widget */
+    TOptional<TSharedRef<STextBlock>>        OptEndMsgRef, OptStatsRef, OptScoreRef;
+    TSharedPtr<FObfuscator>                  Obfsctr;
     std::vector<int>                         NeighbourCheck = {0x0, -0x1, +0x1};
-    bool                                     bPlaySameAgain = true;
-    uint16                                   NextRowSize = 0xc, NextColSize = 0xc;
+    uint16                                   NextRowSize = 0x5, NextColSize = 0x5;
 
 
     /**
@@ -227,29 +299,40 @@ private:
      * Call if first tile user clicks on is a mine, a common rule in minesweeper 
      **/
     void
-    ReplaceMine(Coords TileCoords);
+    ReplaceMine(FCoords TileCoords);
 
     /**
-    * @brief Check if a given tile is within bounds \n
-    * @param TileCoords Struct with coords for tile to replace
-    * Call if first tile user clicks on is a mine, a common rule in minesweeper 
-    **/
+     * @brief Check if a given tile is within bounds \n
+     * @param TileCoords Struct with coords for tile to replace
+     * Call if first tile user clicks on is a mine, a common rule in minesweeper 
+     **/
     bool
-    CheckBounds(Coords TileCoords) const;
+    CheckBounds(FCoords TileCoords) const;
+
+    /**
+     * @brief  Count how many neighbouring tiles are bombs
+     * @param TileCoords Struct with coords for tile which whose neighbours will be checked
+     **/
     void
-    CountNeighbours(Coords TileCoords);
+    CountNeighbours(FCoords TileCoords);
+
+    /**
+     * @brief  Update tile visual elements of the tile at input coords
+     * @param TileCoords Struct with coords for the tile that needs to be updates 
+     **/
     void
-    UpdateTileStyle(Coords TileCoords);
+    UpdateTileStyle(FCoords TileCoords);
 
     /**
      * @brief  Check Neighbouring tiles for bomb-tiles
-     * @param TileCoords Struct with coords for tile which whos neighbours will be checked
+     * @details internally it calls CountNeighbourMines() and then UpdateTileStyle()
+     * @param TileCoords Struct with coords for which tile to check.
      **/
     void
-    CheckNeighbours(const Coords TileCoords);
+    CheckNeighbours(const FCoords TileCoords);
 
     /**
-     * @brief Display BombTiles
+     * @brief Display All BombTiles on the game-board
      **/
     void
     DisplayBombs();
@@ -257,24 +340,27 @@ private:
     /**
      * @brief  Spread from clicked tile
      * @param TileCoords Tile to spread from
-     * @note This takes input a simple Coords type and does a recursive
-     * backtracking until it can't reveal more tiles
+     * @details This takes input a simple Coords type and does a recursive
+     * backtracking until it can't reveal more tiles.
      **/
     void
-    SpreadStep(Coords TileCoords);
+    SpreadStep(FCoords TileCoords);
 }; /** End of FSysManager class */
 
 
-/** Secret class, kindly ignore this :) */
+/** @class FObfuscator
+ *  @brief Secret class, kindly ignore this :)
+ *  @details This is a class to be ignored. Will not contain any documentation.
+ **/
 class FObfuscator {
 public:
 
     // Sorry for this naming, I have my reasons haha
     template<uint8 BitField>
     static bool
-    Obfsc(const Coords TileCoords, const uint8 Fieldval);
+    Obfsc(const FCoords TileCoords, const uint8 Fieldval);
     void
-        BW(), DW(), BC() const;
+        VC(), PC(), BW(), DW(), BC() const, CB() const, BF() const;
     bool
         CC() const, DC() const;
     template<uint8 BitField>
@@ -282,11 +368,9 @@ public:
     SCW();
     uint8 &
     SC();
-
     void
-    ObfscDobfsc(TSharedPtr<FSysManager> ManagerShared);
-    void
-    DobfscObfsc(TSharedPtr<FSysManager> ManagerShared, FSysManager::EGameState);
+        ObfscDobfsc(TSharedPtr<FSysManager> ManagerShared),
+        DobfscObfsc(TSharedPtr<FSysManager> ManagerShared, FSysManager::EGameState);
 
     static inline void
     Binder(const char * BinderVar = MX M0 M1 M2 M3 M4 M5 M6 M7, char * Returner = nullptr)
@@ -332,10 +416,11 @@ public:
     }
 
 private:
-    uint8  SC_ = 0x0;
-    bool   bConsW = false;
-    void * bW = nullptr;
-    void * cW = nullptr;
+    uint8 SC_ = 0x0;
+    bool  bConsW = false;
+    void
+        * bW = nullptr,
+        * cW = nullptr;
 
 
 }; /** End of FObfuscator class */
