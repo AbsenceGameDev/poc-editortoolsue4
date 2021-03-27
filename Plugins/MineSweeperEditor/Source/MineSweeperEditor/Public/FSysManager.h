@@ -278,6 +278,19 @@ private:
      **/
 
     /**
+     * @brief Clears grid data.  
+     **/
+    void
+    ClearGridData();
+
+    /**
+     * @brief Sets SlateGrid elements to either Enables or Disabled
+     * @param bShouldEnable true = enabled, false = disabled
+     **/
+    void
+    SetEnableSlateGrid(bool bShouldEnable);
+
+    /**
      * @brief Set Game-board difficulty
      * @tparam Difficulty Is a template parameter of enum-type EGameDifficulty 
      **/

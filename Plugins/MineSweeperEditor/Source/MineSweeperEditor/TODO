@@ -5,6 +5,8 @@
     
 0g. .Dat file is not saving properly anymore, strange thing is I shan't have done anything to change it since it was working properly. Will investigate
 
+0h. Win message is not being updated, need to manually use teh 
+
 == Things left to implement ==   
 1j. Add a STextComboBox or SListView to use as selection box for difficulty
 

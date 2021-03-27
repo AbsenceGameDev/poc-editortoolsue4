@@ -36,6 +36,7 @@ FSysManager::FSysManager()
     OptScoreRef = SNew(STextBlock) MAKEROBOTO(18);
     Obfsctr = MakeShared<FObfuscator>();
     InitBtnSBrush();
+    ClearGridData();
     SetDifficulty<FSysManager::Normal>();
     PlaceMines();
 }
@@ -65,6 +66,7 @@ FSysManager::UpdateScoreWidget()
     (*OptScoreRef)->SetText(
         FText::FromString("Wins: " + FString::FromInt(Ws) + "\n"
                           + "Losses:" + FString::FromInt(Ls)));
+    (*OptEndMsgRef)->SetText(TEXTARG(SContainer));
 }
 
 
@@ -159,24 +161,30 @@ FSysManager::ClickTile(const FCoords TileCoords)
         } else {
             Ls += 0x1 * (Obfsctr->CC());
             DisplayBombs();
-            for (auto & TileWidget : SlateGrid) {
-                TileWidget.Get().SetEnabled(false);
-            }
+            SetEnableSlateGrid(false);
             ClickedTiles--;
             (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
             return EGameState::L;
         }
-    } else if (ClickedTiles > FreeTilesCount) {
+    } else if (ClickedTiles >= FreeTilesCount) {
         Ws += 0x1 * (!Obfsctr->DC());
-        for (auto & TileWidget : SlateGrid) {
-            TileWidget.Get().SetEnabled(false);
-        }
+        SetAttributes<EBitField::IsClicked>(TileCoords,0x1);
+        // DisplayBombs();
+        CheckNeighbours(TileCoords);
+        SetEnableSlateGrid(false);
+        (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
         return EGameState::W;
     }
     (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
     /** path to handle checking tile and freeing it */
     SpreadStep(TileCoords);
-    return EGameState::P;
+    if (ClickedTiles < FreeTilesCount) {
+        return EGameState::P;
+    }
+    Ws += 0x1 * (!Obfsctr->DC());
+    SetEnableSlateGrid(false);
+    return EGameState::W;
+    
 }
 
 /*
@@ -249,6 +257,7 @@ FSysManager::LoadState()
     Ls = (static_cast<uint16>(TotalArr[2]) << 0x8) | static_cast<uint16>(TotalArr[3]);
 }
 
+
 /*
 * Reset Game-board (Generating new match)
 */
@@ -257,17 +266,11 @@ FSysManager::ResetGame()
 {
     UpdateGridSize();
     ClickedTiles = 0;
-    for (auto & TileWidget : SlateGrid) {
-        TileWidget->SetEnabled(true);
-    }
+    SetEnableSlateGrid(true);
     for (auto & TextBlock : TileDisplayGrid) {
-        TextBlock->SetText(FText::FromString("_"));
+        TextBlock->SetText(TEXTARG(""));
     }
-    for (auto & TileRow : GridData) {
-        for (auto & TileData : TileRow) {
-            TileData = 0x0;
-        }
-    }
+    ClearGridData();
     SlateGrid.clear();
     TileDisplayGrid.clear();
     SetDifficulty<FSysManager::Normal>(); // Will bind this later
@@ -281,11 +284,9 @@ FSysManager::ResetGame()
 void
 FSysManager::RestartGame()
 {
-    for (auto & TileWidget : SlateGrid) {
-        TileWidget->SetEnabled(true);
-    }
+    SetEnableSlateGrid(true);
     for (auto & TextBlock : TileDisplayGrid) {
-        TextBlock->SetText(FText::FromString("_"));
+        TextBlock->SetText(TEXTARG(""));
     }
     for (uint16 ColMod = 0x0; ColMod < CurrColSize;) {
         for (uint16 RowMod = 0x0; RowMod < CurrRowSize;) {
@@ -304,7 +305,9 @@ FSysManager::RestartGame()
 
 /**
  * 
- * FSysManager::  Private member functions 
+ * FSysManager::  Private member functions
+ * @function void ClearGridData()
+ * @function void DisableSlateGrid()
  * @function void SetDifficulty<FSysManager::EGameDifficulty>() 
  * @function void PlaceMines()
  * @function void ReplaceMine(Coords)
@@ -312,6 +315,27 @@ FSysManager::RestartGame()
  * @function void SpreadStep(Coords) 
  *
  **/
+
+/*
+* Clear GridData
+*/
+void
+FSysManager::ClearGridData()
+{
+    for (auto & TileRow : GridData) {
+        for (auto & TileData : TileRow) {
+            TileData = 0x0;
+        }
+    }
+}
+
+void
+FSysManager::SetEnableSlateGrid(bool bShouldEnable)
+{
+    for (auto & TileWidget : SlateGrid) {
+        TileWidget.Get().SetEnabled(bShouldEnable);
+    }
+}
 
 /*
  * Set Game-board difficulty/
@@ -343,7 +367,7 @@ FSysManager::PlaceMines()
     const auto GridSize = CurrRowSize * CurrColSize;
 
     /** Continue until all random mines have been created. */
-    for (int PlacedCount = 0; PlacedCount <= NumMines;) {
+    for (int PlacedCount = 0; PlacedCount < NumMines;) {
         const auto   Random = FMath::RandRange(0x0, GridSize);
         const uint16 X = Random / CurrRowSize;
         const uint16 Y = Random % CurrColSize;
@@ -417,13 +441,7 @@ void
 FSysManager::UpdateTileStyle(const FCoords TileCoords)
 {
     GetTileTextBlock(TileCoords)
-        ->SetText(
-            FText::FromString(
-                FString::FromInt(
-                    GetAttributes<EBitField::NeighbourMines>(TileCoords)
-                    )
-                )
-            );
+        ->SetText(NUMTEXTARG(GetAttributes<EBitField::NeighbourMines>(TileCoords)));
     GetGridFSlot(TileCoords)->SetEnabled(false);
 }
 
@@ -454,7 +472,7 @@ FSysManager::DisplayBombs()
             TileCoords.X = RowMod;
             if (GetAttributes<EBitField::IsMine>(TileCoords)) {
                 FString ToString = "X";
-                GetTileTextBlock(TileCoords)->SetText(FText::FromString(ToString));
+                GetTileTextBlock(TileCoords)->SetText(TEXTARG(ToString));
             }
         }
     }

@@ -92,14 +92,15 @@ public:
 
     /**
      * @brief Regenerates an already existing Slate Grid 
-     * @param SizeCoords Maximum size: X,Y 
+     * @param Xin Maximum size X
+     * @param Yin Maximum size Y
      * @note FSLocal - Local container to create and bind function \n
      * FSLocal::OnTileClick(const Coords, TSharedPtr<FSysManager>) \n
      * FSLocal::MakeTile(const Coords, TSharedPtr<FSysManager>)
      * @return Shared reference of Grid panel, type: TSharedRef<SUniformGridPanel>
      **/
     void
-    RegenerateGrid(const FCoords SizeCoords, TSharedRef<class SUniformGridPanel>) const;
+    RegenerateGrid(uint8 Xin, uint8 Yin, TSharedRef<class SUniformGridPanel>) const;
 private:
 
     /**
@@ -124,14 +125,15 @@ private:
 
     /**
      * @brief Generate Slate Grid 
-     * @param SizeCoords Maximum size: X,Y 
+     * @param Xin Maximum size X
+     * @param Yin Maximum size Y 
      * @note FSLocal - Local container to create and bind function \n
      * FSLocal::OnTileClick(const Coords, TSharedPtr<FSysManager>) \n
      * FSLocal::MakeTile(const Coords, TSharedPtr<FSysManager>)
      * @return Shared reference of Grid panel, type: TSharedRef<SUniformGridPanel>
      **/
     TSharedRef<class SUniformGridPanel>
-    GenerateGrid(const FCoords SizeCoords) const;
+    GenerateGrid(uint8 Xin, uint8 Yin) const;
 
 
     /**

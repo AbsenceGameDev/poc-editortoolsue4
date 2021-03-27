@@ -206,24 +206,21 @@ FMineSweeperEditorModule::RegisterMenus()
 }
 
 /*
- * Generate Slate Grid 
- */
+* Generate Slate Grid 
+*/
 TSharedRef<SUniformGridPanel>
-FMineSweeperEditorModule::GenerateGrid(const FCoords SizeCoords) const
+FMineSweeperEditorModule::GenerateGrid(uint8 Xin, uint8 Yin) const
 {
-    const auto Xin = SizeCoords.X, Yin = SizeCoords.Y;
-    const FCoords MaxBound = {SysManager->Gmax_Size,SysManager->Gmax_Size};
-    const FCoords MinBound = {0x0,0x0};
     /** Actual function body in GenerateGrid */
     TSharedRef<SUniformGridPanel> IdxField = SNew(SUniformGridPanel);
-    if (SizeCoords > MinBound || SizeCoords <= MaxBound) {
+    if (Xin < 0x1 || Yin < 0x1 || Xin > 0x40 || Yin > 0x40) {
         return IdxField; // Return empty grid, should make as an assertion, but this works temporarily
     }
-
+    uint16  Row = 0, Col = 0;
     FCoords TileCoords;
-    for (uint16 Row = 0; Row < Yin;) {
+    for (Row = 0; Row < Yin;) {
         TileCoords.Y = Row;
-        for (uint16 Col = 0; Col < Xin;) {
+        for (Col = 0; Col < Xin;) {
             TileCoords.X = Col;
             IdxField->AddSlot(Col, Row)[FTileBinder::MakeTile(TileCoords, SysManager)];
             Col++;
@@ -234,25 +231,17 @@ FMineSweeperEditorModule::GenerateGrid(const FCoords SizeCoords) const
 }
 
 /*
- * Regenerate Slate Grid 
- */
+* Regenerate Slate Grid 
+*/
 void
-FMineSweeperEditorModule::RegenerateGrid(const FCoords                 SizeCoords,
-                                         TSharedRef<SUniformGridPanel> IdxField) const
+FMineSweeperEditorModule::RegenerateGrid(uint8 Xin, uint8 Yin, TSharedRef<SUniformGridPanel> IdxField) const
 {
-    const auto Xin = SizeCoords.X, Yin = SizeCoords.Y;
-    const FCoords MaxBound = {SysManager->Gmax_Size,SysManager->Gmax_Size};
-    const FCoords MinBound = {0x0,0x0};
-    
-    if (SizeCoords > MinBound || SizeCoords <= MaxBound) {
-        return; // I'm not expecting this, but just in case
-    }
-    /** Actual function body in ReGenerateGrid */
+    /** Actual function body in GenerateGrid */
     uint16  Row = 0, Col = 0;
     FCoords TileCoords;
-    for (; Row < Yin;) {
+    for (Row = 0; Row < Yin;) {
         TileCoords.Y = Row;
-        for (; Col < Xin;) {
+        for (Col = 0; Col < Xin;) {
             TileCoords.X = Col;
             IdxField->AddSlot(Col, Row)[FTileBinder::MakeTile(TileCoords, SysManager)];
             Col++;
@@ -399,18 +388,7 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
     [
         *SysManager->GetPrivateMemberRef<FSysManager::STextEndMsgRef>() =
         SNew(STextBlock)
-        .Text_Raw(SysManager.Get(), &FSysManager::DisplayEndMsg)
-        MAKEROBOTO(38)
-    ];
-
-    // TotalScore
-    // replace .Text with .Text_Raw and bind it to a function which reflects changes on SContainer or R00Container
-    MainField->AddSlot(0x0, 0x1)
-    [
-        *SysManager->GetPrivateMemberRef<FSysManager::STextEndMsgRef>() =
-        SNew(STextBlock)
-        .Text_Raw(SysManager.Get(), &FSysManager::DisplayEndMsg)
-        MAKEROBOTO(38)
+        MAKEROBOTO(28)
     ];
 
     // Show GameData == Free tiles left to click
@@ -418,19 +396,20 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
     MainField->AddSlot(0x2, 0x0)
     [
         SNew(SWrapBox)
+
+        // Score-text
         + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
         [
             *SysManager->GetPrivateMemberRef<FSysManager::STextScoreRef>()
         ]
 
+        // Free tiles stats
         + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
         [
-            *SysManager->GetPrivateMemberRef<FSysManager::STextEndMsgRef>() =
             SNew(STextBlock)
             MAKETEXT("Free Tiles:")
             MAKEROBOTO(16)
         ]
-
         + SWrapBox::Slot().Padding(5).VAlign(VAlign_Center)
         [
             *SysManager->GetPrivateMemberRef<FSysManager::STextStatsRef>()
@@ -442,7 +421,7 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
     [
         // TSharedPtr<SUniformGridPanel>::
         *(SysManager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>())
-        = GenerateGrid(FCoords{SysManager->CurrRowSize, SysManager->CurrColSize})
+        = GenerateGrid(SysManager->CurrRowSize, SysManager->CurrColSize)
     ];
 
     // Quick implementation of scrolling to be able to show a max-size playingboard,
@@ -462,6 +441,15 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
         ];
 }
 
+// We want to zoom in a widget, and then fade in its contents.
+// EActiveTimerReturnType
+// FMineSweeperEditorModule::TriggerTextAnim(double InCurrentTime, float InDeltaTime)
+// {
+// 
+//     return EActiveTimerReturnType::Continue;
+// }
+
+
 /** Create New Game event */
 FReply
 FTileBinder::NewGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
@@ -469,7 +457,8 @@ FTileBinder::NewGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSys
     /** Reset game in SysManager, generate new slategrid, etc*/
     Manager->ResetGame();
     Manager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>()->Get().ClearChildren();
-    Owner->RegenerateGrid(FCoords{Manager->CurrRowSize, Manager->CurrColSize},
+    Owner->RegenerateGrid(Manager->CurrRowSize,
+                          Manager->CurrColSize,
                           *(Manager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>()));
     Manager->GetPrivateMemberRef<FSysManager::BoolPlayAgain>() = true;
     return FReply::Handled();
@@ -486,7 +475,8 @@ FTileBinder::RestartGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<
 
     Manager->RestartGame();
     Manager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>()->Get().ClearChildren();
-    Owner->RegenerateGrid(FCoords{Manager->CurrRowSize, Manager->CurrColSize},
+    Owner->RegenerateGrid(Manager->CurrRowSize,
+                          Manager->CurrColSize,
                           *(Manager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>()));
     Manager->GetPrivateMemberRef<FSysManager::BoolPlayAgain>() = false;
     return FReply::Handled();
