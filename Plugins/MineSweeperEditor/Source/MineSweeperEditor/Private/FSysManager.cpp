@@ -57,8 +57,8 @@ FSysManager::InitBtnSBrush()
 }
 
 /*
-* Updating the STextBlock score-widget after a finished match
-*/
+ * Updating the STextBlock score-widget after a finished match
+ */
 void
 FSysManager::UpdateScoreWidget()
 {
@@ -67,40 +67,55 @@ FSysManager::UpdateScoreWidget()
                           + "Losses:" + FString::FromInt(Ls)));
 }
 
-// get value to display in SNumericEntryBox
+
+/*
+ * Get value to display in SNumericEntryBox
+ */
 TOptional<uint16>
 FSysManager::DisplayColSize() const
 {
     return NextColSize;
 }
 
-// get value to display in SNumericEntryBox
+/*
+ * Get value to display in SNumericEntryBox
+ */
 TOptional<uint16>
 FSysManager::DisplayRowSize() const
 {
     return NextRowSize;
 }
 
+/*
+ * Get End message Ftext to display in OptEndMsgRef
+ */
 FText
 FSysManager::DisplayEndMsg() const
 {
     return FText::FromString(SContainer);
 }
 
-// Set Value
+/*
+ * Set value for NextRowSize, bound to SSlider
+ */
 void
 FSysManager::RowSizeCommitted(float NewRowSize)
 {
     NextRowSize = NewRowSize;
 }
 
-// Set Value
+/*
+ * Set value for NextColSize, bound to SSlider
+ */
 void
 FSysManager::ColSizeCommitted(float NewColSize)
 {
     NextColSize = NewColSize;
 }
 
+/*
+ * Updates CurrRowSize & CurrColSize
+ */
 void
 FSysManager::UpdateGridSize()
 {
@@ -111,9 +126,7 @@ FSysManager::UpdateGridSize()
 
 /*
  * Get reference to specific Slate SUniformGridPanel::FSlot
- * How to resolve a 2d index to 1d;
- * Row Major, so x0y0, x1y0, x2y0, ... , xny0, x0y1, x1y1, x2y1, ... , xny1,  etc..
- * (x + xmax*y) ? Seems right
+ * Resolve a 2d index to 1d, Row-Major: (x + xmax*y) 
  */
 TSharedRef<SButton>
 FSysManager::GetGridFSlot(FCoords TileCoords)
@@ -121,16 +134,22 @@ FSysManager::GetGridFSlot(FCoords TileCoords)
     return SlateGrid.at(TileCoords.X + (CurrRowSize * TileCoords.Y));
 }
 
+/*
+ * Get reference to specific Slate SUniformGridPanel::FSlot
+ * Resolve a 2d index to 1d, Row-Major: (x + xmax*y) 
+ */
 TSharedRef<STextBlock>
 FSysManager::GetTileTextBlock(FCoords TileCoords)
 {
     return TileDisplayGrid.at(TileCoords.X + (CurrRowSize * TileCoords.Y));
 }
 
+/*
+ * Clicks tile and calls game-logic
+ */
 FSysManager::EGameState
-FSysManager::ClickTile(uint8 XCoord, uint8 YCoord)
+FSysManager::ClickTile(const FCoords TileCoords)
 {
-    const FCoords TileCoords{XCoord, YCoord};
     ClickedTiles++;
     /** If clicked on Mine */
     if (GetAttributes<EBitField::IsMine>(TileCoords)) {

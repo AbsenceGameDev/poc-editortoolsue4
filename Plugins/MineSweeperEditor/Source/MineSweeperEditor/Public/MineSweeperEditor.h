@@ -8,9 +8,8 @@
 
 #include "CoreMinimal.h"
 #include "FSysManager.h"
+// ReSharper disable once CppUnusedIncludeDirective
 #include "Modules/ModuleManager.h"
-#include <array>
-#include <vector>
 
 /**
  * @class FMineSweeperEditorModule
@@ -47,16 +46,17 @@ public:
 
     /**
     * @brief StatupModule - IModuleInterface override
-    * @details Initializes the styleset and command,
+    * @details Initializes the style-set and command,
     * then registers callback and the new tab in the editor menu.
     **/
     virtual void
     StartupModule() override;
 
     /**
-    * @brief StatupModule - IModuleInterface override
-    * @details Initializes the styleset and command,
-    * then registers callback and the new tab in the editor menu.
+    * @brief Shutdown - IModuleInterface override
+    * @details De-initializes the style-set and command,
+    * as-well as triggers SaveState in FSysManager, then de-registers
+    * callback and the new tab in the editor menu.
     **/
     virtual void
     ShutdownModule() override;
@@ -90,8 +90,16 @@ public:
     void
     CommittedY(const uint8 NewInt, ETextCommit::Type CommitType) const;
 
+    /**
+     * @brief Regenerates an already existing Slate Grid 
+     * @param SizeCoords Maximum size: X,Y 
+     * @note FSLocal - Local container to create and bind function \n
+     * FSLocal::OnTileClick(const Coords, TSharedPtr<FSysManager>) \n
+     * FSLocal::MakeTile(const Coords, TSharedPtr<FSysManager>)
+     * @return Shared reference of Grid panel, type: TSharedRef<SUniformGridPanel>
+     **/
     void
-    RegenerateGrid(uint8 XIn, uint8 YIn, TSharedRef<class SUniformGridPanel>) const;
+    RegenerateGrid(const FCoords SizeCoords, TSharedRef<class SUniformGridPanel>) const;
 private:
 
     /**
@@ -99,9 +107,9 @@ private:
      * 
      **/
     TSharedPtr<class FUICommandList> PluginCmds;
-    FCurveSequence Sequence;
-    FCurveHandle ZoomCurve; 
-    FCurveHandle FadeCurve; 
+    FCurveSequence                   Sequence;
+    FCurveHandle                     ZoomCurve;
+    FCurveHandle                     FadeCurve;
 
     /**
      * @brief Private member functions
@@ -116,15 +124,14 @@ private:
 
     /**
      * @brief Generate Slate Grid 
-     * @param XIn Grid Row Size
-     * @param YIn Grid Column Size
+     * @param SizeCoords Maximum size: X,Y 
      * @note FSLocal - Local container to create and bind function \n
      * FSLocal::OnTileClick(const Coords, TSharedPtr<FSysManager>) \n
      * FSLocal::MakeTile(const Coords, TSharedPtr<FSysManager>)
      * @return Shared reference of Grid panel, type: TSharedRef<SUniformGridPanel>
      **/
     TSharedRef<class SUniformGridPanel>
-    GenerateGrid(uint8 XIn, uint8 YIn) const;
+    GenerateGrid(const FCoords SizeCoords) const;
 
 
     /**
@@ -136,17 +143,18 @@ private:
      **/
     TSharedRef<class SDockTab>
     OnSpawnTab(const class FSpawnTabArgs & SpawnTabArgs) const;
-    
-     // EActiveTimerReturnType TriggerTextAnim(double InCurrentTime, float InDeltaTime);
+
+    // EActiveTimerReturnType TriggerTextAnim(double InCurrentTime, float InDeltaTime);
 }; /** End of FMineSweeperEditorModule class */
 
 
 /**
- * @brief  public delegate container
- *
+ * @struct FTileBinder
+ * @brief  Function binder
+ * @details Implements functions which are then used to bind to delegates in FMineSweeperEditorModule
  **/
 struct FTileBinder {
-    
+
     /**
      * @brief New Game event
      * @details Starts a new game, uses the slider values to generate new board-dimensions. 
@@ -175,7 +183,7 @@ struct FTileBinder {
     * @retun returns an FReply::Handled() when finished.
     */
     static FReply
-    OnTileClick(FCoords                  TileCoords,
+    OnTileClick(FCoords                 TileCoords,
                 TSharedPtr<FSysManager> ManagerShared);
 
     /**

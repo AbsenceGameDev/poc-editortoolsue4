@@ -107,7 +107,7 @@ public:
 
     /**
      * @brief FSysManager constructor
-     * @details Loads some FStrinsg into a TArray<FString>,
+     * @details Loads some FStrings into a TArray<FString>,
      * then constructing some shared pointers to some of FSysManager members 
      **/
     FSysManager();
@@ -188,13 +188,12 @@ public:
     TSharedRef<STextBlock>
     GetTileTextBlock(FCoords TileCoords);
 
-
     /**
      * @brief Click Tile
-     * @param XCoord, YCoord two unsigned 8bit integers
+     * @param TileCoords Coordinato to tile to be clicked
      **/
     EGameState
-    ClickTile(uint8 XCoord, uint8 YCoord);
+    ClickTile(const FCoords TileCoords);
 
     /** Templated attributes getter/setter functions */
     /**
@@ -265,7 +264,7 @@ private:
      **/
     bool                                     bPlaySameAgain = true;
     std::vector<TSharedRef<SButton>>         SlateGrid; /** Refs to actual tile-widgets on the grid */
-    std::vector<TSharedRef<STextBlock>>      TileDisplayGrid; /** Button-textblock refs for neighbour-count */
+    std::vector<TSharedRef<STextBlock>>      TileDisplayGrid; /** Button text-block refs for neighbour-count */
     TOptional<TSharedRef<SUniformGridPanel>> OptGridWidgetRef; /** Ref to the actual Grid-Widget */
     TOptional<TSharedRef<STextBlock>>        OptEndMsgRef, OptStatsRef, OptScoreRef;
     TSharedPtr<FObfuscator>                  Obfsctr;
@@ -279,7 +278,7 @@ private:
      **/
 
     /**
-     * @brief Set Gameboard difficulty
+     * @brief Set Game-board difficulty
      * @tparam Difficulty Is a template parameter of enum-type EGameDifficulty 
      **/
     template<EGameDifficulty Difficulty>

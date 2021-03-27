@@ -34,19 +34,19 @@
 #define MFaks M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL
 
 
-/** @note  FREETILES is ONLY to be used within member functions of class FSysManager */
+/** @note  \FREETILES is ONLY to be used within member functions of class FSysManager */
 #define FREETILES FreeTilesCount - ClickedTiles
 
-/** @note  MAKEROBOTO is ONLY to be used Slate widgets that, when created through SNew(), have the member function .Font(...)  */
+/** @note  \MAKEROBOTO is ONLY to be used Slate widgets that, when created through SNew(), have the member function .Font(...)  */
 #define MAKEROBOTO(FontSize) .Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), FontSize))
 #define ROBOTOARG(FontSize) (FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), FontSize))
-/** @note  MAKETEXT is ONLY to be used Slate widgets that, when created through SNew(), have the member function .Text(...) */
+/** @note  \MAKETEXT is ONLY to be used Slate widgets that, when created through SNew(), have the member function .Text(...) */
 #define MAKETEXT(InString) .Text(FText::FromString( InString ))
 #define TEXTARG(InString) (FText::FromString( InString ))
-/** @note  INT_TEXT is ONLY to be used Slate widgets that, when created through SNew(),
+/** @note  \INT_TEXT is ONLY to be used Slate widgets that, when created through SNew(),
  *   have the member function .Text(...) as-well as an integer to read as text*/
 #define MAKENUMTEXT(InInt) .Text(FText::FromString( FString::FromInt(InInt)))
-#define NUMTEXTARG(InInt) (FText::FromString( FString::FromInt(InInt))) 
+#define NUMTEXTARG(InInt) (FText::FromString( FString::FromInt(InInt)))
 
 bool bCh = false;
 
@@ -56,9 +56,11 @@ struct FCoordsT {
     uint16 Y;
 
     /**
-     * Compiler by some reason (Even tho it was a very simple type)
-     * It wasn't doing the logical nor arithmetic operations properly,
-     * so I had to manually define overloads for them
+     * Compiler could not create proper default operators,
+     * It wasn't doing the logical nor arithmetic operations properly.
+     * Was getting errors of mismatch types and undefined operators so I had to define some myself.
+     * (I was building with Rider, might be a Rider-related issue or might be MSVC compiler-issue,
+     *  either way, this is a faster solution than reinstalling Rider or eventual compilers or whatnot)
      **/
 
     /** Arithmetic operations */
@@ -74,35 +76,35 @@ struct FCoordsT {
     operator +(const FCoordsT & C2) const
     {
         return FCoordsT{static_cast<uint16>(this->X + C2.X),
-                       static_cast<uint16>(this->Y + C2.Y)};
+                        static_cast<uint16>(this->Y + C2.Y)};
     }
 
     FCoordsT
     operator -(const FCoordsT & C2) const
     {
         return FCoordsT{static_cast<uint16>(this->X - C2.X),
-                       static_cast<uint16>(this->Y - C2.Y)};
+                        static_cast<uint16>(this->Y - C2.Y)};
     }
 
     FCoordsT
     operator *(const FCoordsT & C2) const
     {
         return FCoordsT{static_cast<uint16>(this->X * C2.X),
-                       static_cast<uint16>(this->Y * C2.Y)};
+                        static_cast<uint16>(this->Y * C2.Y)};
     }
 
     FCoordsT
     operator /(const FCoordsT & C2) const
     {
         return FCoordsT{static_cast<uint16>(this->X / C2.X),
-                       static_cast<uint16>(this->Y / C2.Y)};
+                        static_cast<uint16>(this->Y / C2.Y)};
     }
 
     FCoordsT
     operator %(const FCoordsT & C2) const
     {
         return FCoordsT{static_cast<uint16>(this->X % C2.X),
-                       static_cast<uint16>(this->Y % C2.Y)};
+                        static_cast<uint16>(this->Y % C2.Y)};
     }
 
     FCoordsT
