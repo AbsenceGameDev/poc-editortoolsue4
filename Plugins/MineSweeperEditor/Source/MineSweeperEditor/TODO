@@ -1,4 +1,5 @@
-﻿== Semantic Error ==
+﻿==================== INCOMPLETE ===================== (This is not representative of everything, it is mostly more important objectives)
+== Semantic Error ==
 0f. There seems to be that steps are not skipped properly when searching, leaving it to search a bit too little unpredictable.
     I fixed the stepping issue, partially due to a typo in SetAttributes and partially due to the order of   
     but it also seems that it steps one level of depth less than it should.  
@@ -22,6 +23,7 @@
     Solution, either override SNumericEntryBox OnValueCommitted or use an SSlider to circumvent the issue
 
 == Things to implement ==
+
 1a. Store Total wins/losses in saved filed (Done but haven't been tested)
 1b. Fetch Correct child-slot from SDockTab (ownership chain -> SDockTab:SWrapBox:SUniformGridPanel:Button[y][x])  
 1c. Set revealed tile as clicked.

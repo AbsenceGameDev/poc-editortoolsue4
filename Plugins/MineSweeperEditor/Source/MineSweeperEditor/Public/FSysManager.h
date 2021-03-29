@@ -34,8 +34,6 @@ public:
     uint16                       FreeTilesCount = 0x0, ClickedTiles = 0x0;
     uint16                       CurrRowSize = 0x5, CurrColSize = 0x5;
     uint16                       Ws = 0x0,          Ls = 0x0;
-    FString                      SContainer = FString(TEXT(""));
-    FString                      RContainer = FString(TEXT(""));
 
     /**
      * @brief Grid Data array.
@@ -96,10 +94,8 @@ public:
         VectorDifficultyList = 0x2,
         VectorTileDisplayGrid = 0x3,
         TOptGridWidgetRef = 0x4,
-        FObfsctr = 0x5,
-        STextEndMsgRef = 0x6,
-        STextStatsRef = 0x7,
-        STextScoreRef = 0x8
+        STextStatsRef = 0x5,
+        STextScoreRef = 0x6
     };
 
     /**
@@ -275,8 +271,7 @@ private:
     std::vector<TSharedRef<SButton>> DifficultyList; /** Refs to actual tile-widgets on the grid */
     std::vector<TSharedRef<STextBlock>> TileDisplayGrid; /** Button text-block refs for neighbour-count */
     TOptional<TSharedRef<SUniformGridPanel>> OptGridWidgetRef; /** Ref to the actual Grid-Widget */
-    TOptional<TSharedRef<STextBlock>> OptEndMsgRef, OptStatsRef, OptScoreRef;
-    TSharedPtr<FObfuscator> Obfsctr;
+    TOptional<TSharedRef<STextBlock>> OptStatsRef, OptScoreRef;
     std::vector<int> NeighbourCheck = {0x0, -0x1, +0x1};
     uint16 NextRowSize = 0x5, NextColSize = 0x5, NumMines = 0x0;
     EGameDifficulty NextDifficulty = EGameDifficulty::Normal;
@@ -367,83 +362,4 @@ private:
     void
     SetDifficulty();
 }; /** End of FSysManager class */
-
-
-/** @class FObfuscator
- *  @brief Secret class, kindly ignore this :)
- *  @details This is a class to be ignored. Will not contain any documentation.
- **/
-class FObfuscator {
-public:
-
-    // Sorry for this naming, I have my reasons haha
-    template<uint16 BitField>
-    static bool
-    Obfsc(const FCoords TileCoords, const uint16 Fieldval);
-    void
-        VC(), PC(), BW(), DW(), BC() const, CB() const, BF() const;
-    uint8 &
-    FK();
-    uint8 &
-    HG();
-    bool
-        CC() const, DC() const;
-    template<uint16 BitField, uint16 Bit2Field, uint16 Bit4Field, uint16 Bit8Field, uint16 Bit16Field>
-    bool
-    SCW();
-    uint8 &
-    SC();
-    void
-        ObfscDobfsc(TSharedPtr<FSysManager> ManagerShared),
-        DobfscObfsc(TSharedPtr<FSysManager> ManagerShared, FSysManager::EGameState);
-    bool
-    VH();
-    bool
-    KP();
-    bool
-    MW();
-    bool
-    WV();
-    uint8 &
-    GS();
-
-    // Ignore this default FString value, I know it is a risk for memory leaks
-    static inline void
-    Binder(FString & Garble, FString & ReturnParam)
-    {
-        if (Garble.IsEmpty()) {
-            return;
-        }
-        unsigned char Step = 0x0;
-        for (; Step < 0x18; Step++) {
-            ReturnParam += (Garble.GetCharArray()[Step + 0xc]); // - ((0x26 - step) % 0x7);
-        }
-    }
-
-    /** Global flipper */
-    static inline void
-    Flipper(FString & Flipper ,FString & ReturnParam)
-    {
-        if (ReturnParam == "") {
-            return;
-        }
-        
-        unsigned char Step = 0x0;
-        for (; Step < 0x18;) {
-            Flipper += ReturnParam[(0x17 - Step)];
-            Step++;
-        }
-        FDcde::Decode(Flipper, ReturnParam);
-    }
-
-private:
-    uint8 SC_ = 0x0;
-    bool  bConsW = false;
-    void
-        * bW = nullptr,
-        * cW = nullptr;
-
-
-}; /** End of FObfuscator class */
-
 #endif // FSYS_MANAGER_H

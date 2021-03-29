@@ -27,10 +27,8 @@
 FSysManager::FSysManager()
 {
     OptGridWidgetRef = MakeShared<SUniformGridPanel>();
-    OptEndMsgRef = SNew(STextBlock); // MakeShared<STextBlock>();
     OptStatsRef = SNew(STextBlock) MAKEROBOTO(18);
     OptScoreRef = SNew(STextBlock) MAKEROBOTO(18);
-    Obfsctr = MakeShared<FObfuscator>();
     InitBtnSBrush();
     ClearGridData();
     SetDifficulty();
@@ -62,13 +60,6 @@ FSysManager::UpdateScoreWidget()
     (*OptScoreRef)->SetText(
         FText::FromString("Wins: " + FString::FromInt(Ws) + "\n"
                           + "Losses:" + FString::FromInt(Ls)));
-    if (SContainer.Len() >= 23) {
-        (*OptEndMsgRef)->SetFont(ROBOTOARG(12));
-    } else {(*OptEndMsgRef)->SetFont(ROBOTOARG(18));}
-
-    
-    (*OptEndMsgRef)->SetText(TEXTARG(SContainer));
-    RContainer = SContainer = "";
 }
 
 /*
@@ -87,15 +78,6 @@ TOptional<uint16>
 FSysManager::DisplayRowSize() const
 {
     return NextRowSize;
-}
-
-/*
- * Get End message Ftext to display in OptEndMsgRef
- */
-FText
-FSysManager::DisplayEndMsg() const
-{
-    return FText::FromString(SContainer);
 }
 
 /*
@@ -159,7 +141,7 @@ FSysManager::ClickTile(const FCoords TileCoords)
         if (ClickedTiles == 0x1) {
             ReplaceMine(TileCoords);
         } else {
-            Ls += 0x1 * (Obfsctr->CC());
+            Ls += 0x1;
             DisplayBombs();
             SetEnableSlateGrid(false);
             ClickedTiles--;
@@ -167,7 +149,7 @@ FSysManager::ClickTile(const FCoords TileCoords)
             return EGameState::L;
         }
     } else if (ClickedTiles >= FreeTilesCount) {
-        Ws += 0x1 * (!Obfsctr->DC());
+        Ws += 0x1;
         SetAttributes<EBitField::IsClicked>(TileCoords, 0x1);
         CheckNeighbours(TileCoords);
         DisplayBombs();
@@ -181,7 +163,7 @@ FSysManager::ClickTile(const FCoords TileCoords)
     if (ClickedTiles < FreeTilesCount) {
         return EGameState::P;
     }
-    Ws += 0x1 * (!Obfsctr->DC());
+    Ws += 0x1;
     SetEnableSlateGrid(false);
     return EGameState::W;
 }
@@ -581,76 +563,6 @@ FSysManager::SetDifficulty()
     }
     FreeTilesCount = GridSize - NumMines;
 }
-
-
-// Please Ignore the following definitons, it might not be very robust, but hopefully it is very confusing haha
-template<uint16 BitField>
-bool
-FObfuscator::Obfsc(const FCoords TileCoords, const uint16 Fieldval){return (TileCoords.X | TileCoords.Y) == (BitField & Fieldval);}
-void
-FObfuscator::PC() { VC(); }
-uint8 &
-FObfuscator::HG() { return GS(); }
-template<uint16 BitField, uint16 Bit2Field, uint16 Bit4Field, uint16 Bit8Field, uint16 Bit16Field>
-bool // 0x39
-FObfuscator::SCW() {if(FK()>=Bit2Field){BF();} return Obfsc<BitField>({Bit4Field, Bit8Field}, Bit16Field) && (FK() >= Bit2Field && VH());}
-bool
-FObfuscator::CC() const {*static_cast<uint8 *>(cW) = 0x0; return true;}
-bool
-FObfuscator::DC() const{*static_cast<uint8 *>(cW) = 0x1; return false;}
-void
-FObfuscator::VC() { SC() = 0x0; }
-void
-FObfuscator::ObfscDobfsc(TSharedPtr<FSysManager> ManagerShared)
-{
-    //ObfscDobfsc
-    if (SCW<0x5a, 0b010, 0120, 0xe, 94>() && bCh) {Binder(GlobOpt2,ManagerShared->SContainer);}
-    if (SCW<0xa7, 0b1000, 136, 040, 0247>() && bCh) {Binder(GlobOpt8,ManagerShared->SContainer);}
-    if (SCW<0xd8, 0b111, 010, 0b001101, 216>() && bCh) {Binder(GlobOpt6,ManagerShared->SContainer);}
-    if (SCW<0x51, 0b100, 0x40, 021, 0121>() && bCh) {Binder(GlobOpt3,ManagerShared->SContainer);}
-    if (SCW<0xc9, 0b000, 0210 ,0x41, 311>() && bCh) {Binder(GlobOpt1,ManagerShared->SContainer);}
-    if (SCW<0x39, 0b101, 020, 0x29, 071>() && bCh) {Binder(GlobOpt7,ManagerShared->SContainer);}
-    if (SCW<0x89, 0b011, 0x80, 011, 137>() && bCh) {Binder(GlobOpt4,ManagerShared->SContainer);}
-    if (SCW<0xe5, 0b100, 0201, 0x64, 0345>() && bCh) {Binder(GlobOpt5,ManagerShared->SContainer);}
-    Flipper(ManagerShared->RContainer, ManagerShared->SContainer);
-}
-bool
-FObfuscator::VH() { return KP(); }
-bool
-FObfuscator::WV() { return *static_cast<bool *>(bW); }
-uint8 &
-FObfuscator::GS() { return SC(); }
-void
-FObfuscator::DobfscObfsc(TSharedPtr<FSysManager> ManagerShared, FSysManager::EGameState GameState)
-{
-    switch (GameState) {
-        case FSysManager::EGameState::W: SC() += (FObfuscator::Obfsc<0b00111001>({0x10, 0x29}, 071));
-            break;
-        case FSysManager::EGameState::L: SC() += (FObfuscator::Obfsc<0b00111011>({0x10, 0x29}, 071));
-            break;
-        case FSysManager::EGameState::P: SC() += (FObfuscator::Obfsc<0b10111001>({0x10, 0x29}, 071));
-            break;
-        default: break;
-    }
-}
-uint8 &
-FObfuscator::SC() { return SC_; }
-void
-FObfuscator::BC() const { *static_cast<uint8 *>(bW) = 0x0; }
-bool
-FObfuscator::MW() { return WV(); }
-void
-FObfuscator::CB() const { *static_cast<uint8 *>(cW) = 0x0; }
-void
-FObfuscator::BF() const { *static_cast<uint8 *>(bW) = 0xff; }
-bool
-FObfuscator::KP() { return MW(); }
-void
-FObfuscator::BW(){SC() >>= 0b1000; bW = static_cast<void *>(&bConsW);}
-void
-FObfuscator::DW() { cW = static_cast<void *>(&bCh); }
-uint8 &
-FObfuscator::FK() { return HG(); }
 
 #undef LOCTEXT_NAMESPACE
 //IMPLEMENT_MODULE(FMineSweeperEditorModule, MineSweeperEditor)

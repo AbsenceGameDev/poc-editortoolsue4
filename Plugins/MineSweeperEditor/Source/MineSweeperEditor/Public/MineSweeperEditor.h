@@ -155,7 +155,6 @@ private:
  * @details Implements functions which are then used to bind to delegates in FMineSweeperEditorModule
  **/
 struct FTileBinder {
-
     /**
      * @brief New Game event
      * @details Starts a new game, uses the slider values to generate new board-dimensions. 

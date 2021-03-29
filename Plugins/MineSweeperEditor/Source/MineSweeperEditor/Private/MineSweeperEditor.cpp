@@ -52,12 +52,6 @@ FSysManager::GetPrivateMemberRef() -> auto&
     if constexpr (PrivateMember == EPrivateMember::TOptGridWidgetRef) {
         return OptGridWidgetRef;
     }
-    if constexpr (PrivateMember == EPrivateMember::FObfsctr) {
-        return Obfsctr;
-    }
-    if constexpr (PrivateMember == EPrivateMember::STextEndMsgRef) {
-        return OptEndMsgRef;
-    }
     if constexpr (PrivateMember == EPrivateMember::STextStatsRef) {
         return OptStatsRef;
     }
@@ -98,19 +92,14 @@ FMineSweeperEditorModule::StartupModule()
     FMineSweeperEditorCommands::Register();
 
     PluginCmds = MakeShareable(new FUICommandList);
-    SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->DW();
-    SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->HG() = 0b0;
     PluginCmds->MapAction(
         FMineSweeperEditorCommands::Get().WindowContext,
         FExecuteAction::CreateRaw(this, &FMineSweeperEditorModule::TabBtnClicked),
         FCanExecuteAction()
         );
 
-    SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->BW();
     UToolMenus::RegisterStartupCallback(
         FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMineSweeperEditorModule::RegisterMenus));
-    SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->BC();
-    SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->CB();
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GMineSweeperEditorTabName,
                                                       FOnSpawnTab::CreateRaw(
                                                           this,
@@ -259,9 +248,7 @@ TSharedRef<SDockTab>
 FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 {
     TSharedRef<SGridPanel> MainField = SNew(SGridPanel);
-    const FText            WelcomeText = LOCTEXT("MineSweeperPrompt0",
-                                                 "Welcome to MineSweeper. \n Win 5 matches during one session to uncover a secret! \n"
-                                                 "Please, no cheating by looking at source code. \nIn case you do, I have tried obfuscating it haha.)");
+    const FText            WelcomeText = TEXTARG("Welcome to MineSweeper!!");
     MainField->AddSlot(0x0, 0x0)
     [
         SNew(STextBlock).Text(WelcomeText)
@@ -371,14 +358,6 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
             ]
         ]
 
-    ];
-
-    // Win/Loss Message
-    MainField->AddSlot(0x0, 0x1)
-    [
-        *SysManager->GetPrivateMemberRef<FSysManager::STextEndMsgRef>() =
-        SNew(STextBlock).Text(FText::FromString(""))
-        MAKEROBOTO(28)
     ];
 
     TSharedRef<SButton> BtnEasy = SNew(SButton)
@@ -559,9 +538,7 @@ FTileBinder::OnDifficultyClick(FSysManager::EGameDifficulty Difficulty, TSharedP
 FReply
 FTileBinder::OnTileClick(FCoords TileCoords, TSharedPtr<FSysManager> ManagerShared)
 {
-    auto ObfsPtr = ManagerShared->GetPrivateMemberRef<FSysManager::FObfsctr>();
-    ObfsPtr->DobfscObfsc(ManagerShared, ManagerShared->ClickTile(TileCoords));
-    ObfsPtr->ObfscDobfsc(ManagerShared);
+    ManagerShared->ClickTile(TileCoords);
     ManagerShared->UpdateScoreWidget(); // Update just in-case win or loss has occured
     return FReply::Handled();
 }
