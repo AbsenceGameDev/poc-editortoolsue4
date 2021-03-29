@@ -31,7 +31,7 @@ static const FName GMineSweeperEditorTabName("MineSweeperEditor");
 /*
  * Impl. of FSysManager::GetPrivateMemberRef
  * Implemented here as it is used in this file and it has auto return-type,
- *  this will make sure it is linked and compiles properly
+ *  this will ensure that return-types will be deduced properly when compiling
  */
 template<FSysManager::EPrivateMember PrivateMember>
 auto
@@ -71,19 +71,19 @@ FSysManager::GetPrivateMemberRef() -> auto&
 * @brief FMineSweeperEditorModule::  Public member functions
 * @function FMineSweeperEditorModule()
 * @function void StartupModule(), ShutdownModule(), TabBtnClicked() const
-* @function uint16 GetX() const, GetY() const
 * @function void CommittedX(const FText& NewText, ETextCommit::Type CommitType)
 * @function void CommittedY(const FText& NewText, ETextCommit::Type CommitType)
 * 
 */
 
+/*
+ * FMineSweeperEditorModule constructor
+ */
 FMineSweeperEditorModule::FMineSweeperEditorModule()
 {
     SysManager = MakeShared<FSysManager>();
     SysManager->LoadState();
     SysManager->UpdateScoreWidget();
-    // FCurveHandle ZoomCurve = Sequence.AddCurve( 0, 0.15f );
-    // FCurveHandle FadeCurve = Sequence.AddCurve( 0.15f, 0.1f);
 }
 
 /*
@@ -145,9 +145,8 @@ FMineSweeperEditorModule::TabBtnClicked() const
     FTileBinder::NewGameBind(this, SysManager);
 }
 
-
 /*
- * Set Value
+ * Set Row size Value
  */
 void
 FMineSweeperEditorModule::CommittedX(const uint8       NewInt,
@@ -159,7 +158,7 @@ FMineSweeperEditorModule::CommittedX(const uint8       NewInt,
 }
 
 /*
- * Set Value
+ * Set Cow size Value
  */
 void
 FMineSweeperEditorModule::CommittedY(const uint8       NewInt,
@@ -268,16 +267,6 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
         SNew(STextBlock).Text(WelcomeText)
     ];
 
-    // List difficulty options, bind selected/clicked item to 
-    // fField->AddSlot(0x2, 0x0)
-    // [
-    //     SNew(SListView<TSharedPtr<FString>>)
-    //         .ItemHeight(24)
-    //         .ListItemsSource(&SysManager->DifficultyList)
-    //     // .OnGenerateRow(SListView<TSharedPtr<FString>>::Widget)
-    //     // .OnGenerateRow(SListView<TSharedPtr<FString>>::MakeOnGenerateWidget(this, &FMineSweeperEditorModule::OnGenerateRowForList))
-    // ];
-
     // Create/Restart Game Button
     MainField->AddSlot(0x1, 0x0)
     [
@@ -385,11 +374,10 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
     ];
 
     // Win/Loss Message
-    // replace .Text with .Text_Raw and bind it to a function which reflects changes on SContainer or R00Container
     MainField->AddSlot(0x0, 0x1)
     [
         *SysManager->GetPrivateMemberRef<FSysManager::STextEndMsgRef>() =
-        SNew(STextBlock).Text(FText::FromString("END-GAME MSG!"))
+        SNew(STextBlock).Text(FText::FromString(""))
         MAKEROBOTO(28)
     ];
 
@@ -491,6 +479,17 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
         ];
 }
 
+
+/**
+ *
+ * @brief TileBinder::  Public member functions 
+ * @function FReply NewGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
+ * @function FReply RestartGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
+ * @function FReply OnDifficultyClick(FSysManager::EGameDifficulty Difficulty, TSharedPtr<FSysManager> ManagerShared)
+ * @function FReply OnTileClick(FCoords TileCoords, TSharedPtr<FSysManager> ManagerShared)
+ * @function TSharedRef<SWidget> MakeTile(const FCoords TileCoords, TSharedPtr<FSysManager> ManagerShared)
+ *
+ **/
 
 /** Create New Game event */
 FReply
@@ -598,11 +597,3 @@ FTileBinder::MakeTile(const FCoords TileCoords,
 #undef LOCTEXT_NAMESPACE
 
 IMPLEMENT_MODULE(FMineSweeperEditorModule, MineSweeperEditor)
-
-
-//			] + SWrapBox::Slot().Padding(30).HAlign(HAlign_Left)[
-//				SNew(SEditableTextBox)
-//					.OnTextCommitted(FOnTextCommitted::CreateSP(this, &FMineSweeperEditorModule::CommittedX))
-//			] + SWrapBox::Slot().Padding(30).HAlign(HAlign_Right)[
-//				SNew(SEditableTextBox)
-//					.OnTextCommitted(FOnTextCommitted::CreateSP(this, &FMineSweeperEditorModule::CommittedX))

@@ -10,16 +10,7 @@
 #include "Interfaces/IPluginManager.h"
 #include "Brushes/SlateImageBrush.h"
 
-#define LOCTEXT_NAMESPACE "MineSweeperEditorModule" 
-static FString GlobOpt1 = M_REEE M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_REEL M_REDL M_ROEL;
-static FString GlobOpt2 = M_RADL M_REAL M_RAAL M_REEL M_RAEL M_RAFL M_ROEL M_REDL M_REEE;
-static FString GlobOpt3 = M_REEL M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_ROEL M_REDL M_REEE;
-static FString GlobOpt4 = M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL;
-
-static FString GlobOpt5 = M_RAFL M_RADL M_REDL M_REEE M_RAEL M_REAL M_RAAL M_REEL M_ROEL;
-static FString GlobOpt6 = M_RAEL M_REAL M_RAAL M_REEE M_REEL M_RAFL M_RADL M_REDL M_ROEL;
-static FString GlobOpt7 = M_REEE M_REEL M_RAEL M_REAL M_RAAL M_RAFL M_RADL M_REDL M_ROEL;
-static FString GlobOpt8 = M_REEE M_REEL M_REDL M_RADL M_RAEL M_ROEL M_RAAL M_REAL M_RAFL;
+#define LOCTEXT_NAMESPACE "MineSweeperEditorModule"
 
 /**
  *
@@ -80,7 +71,6 @@ FSysManager::UpdateScoreWidget()
     RContainer = SContainer = "";
 }
 
-
 /*
  * Get value to display in SNumericEntryBox
  */
@@ -135,7 +125,6 @@ FSysManager::UpdateGridSize()
     CurrColSize = NextColSize;
     CurrRowSize = NextRowSize;
 }
-
 
 /*
  * Get reference to specific Slate SUniformGridPanel::FSlot
@@ -267,7 +256,6 @@ FSysManager::LoadState()
     Ls = (static_cast<uint16>(TotalArr[2]) << 0x8) | static_cast<uint16>(TotalArr[3]);
 }
 
-
 /*
 * Reset Game-board (Generating new match)
 */
@@ -313,6 +301,9 @@ FSysManager::RestartGame()
     TileDisplayGrid.clear();
 }
 
+/*
+ * Sets value to NextDifficulty, next game this new value will be loaded-
+ */
 void
 FSysManager::FSetNextDiff(FSysManager::EGameDifficulty NextDiff)
 {
@@ -410,6 +401,9 @@ FSysManager::CheckBounds(FCoords TileCoords) const
            TileCoords < FCoords{CurrRowSize, CurrColSize};
 }
 
+/*
+ * Counts how many neighbours are mines
+ */
 void
 FSysManager::CountNeighbours(const FCoords TileCoords)
 {
@@ -433,6 +427,9 @@ FSysManager::CountNeighbours(const FCoords TileCoords)
     }
 }
 
+/*
+ * Update text and enabled status of tile
+ */
 void
 FSysManager::UpdateTileStyle(const FCoords TileCoords)
 {

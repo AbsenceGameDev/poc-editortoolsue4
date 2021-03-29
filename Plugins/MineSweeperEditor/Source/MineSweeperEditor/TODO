@@ -6,12 +6,6 @@
 == Things left to implement ==   
 1m. Inherit from SButton, override the OnClick_ functions to read both LMB & RMB. (Inspect SButton source-file)
 1n. Get resources loading properly (Brushes). And get save.dat saved/loaded properly.
-1o. Add a STextComboBox or SListView to use as selection box for difficulty
-1p. Clear saved score Button
-1q. Test that the Decoded message work an is decoded properly
-
-If more than 17 chars, change font-size before display
-
 
     
 ==================== DONE ===================== (This is not representative of everything, it is mostly more important objectives)
@@ -41,6 +35,7 @@ If more than 17 chars, change font-size before display
 1k. Total Score STextBlock
 1l. Replace char* with FString in Dcde (and flipper + binder), 
     rewrite the functions a bit to accomodate Ftext, or FString at the very least
+1m. Add difficulty settings available for the user
 
 == Secret/Easter-egg things ==
 2a. Secret win message is obfuscated and is read through Binder() and Flipper(), 
@@ -48,5 +43,7 @@ If more than 17 chars, change font-size before display
 2b. Create own decoder and ditch cppencode 
     (Already ditched cppencode, now only need to make own decoder in the dcde function, 
     this particular decoding is a simple algorithm of I think about 7 steps)
+2c. Just realized I could use the ue4 decode library instea, Test that the Decoded message is decoded properly with this.
+
     
 

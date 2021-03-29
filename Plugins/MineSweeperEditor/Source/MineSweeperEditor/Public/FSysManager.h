@@ -28,9 +28,10 @@ public:
      * @brief Public member variables
      * 
      **/
-    static constexpr uint16      Gmax_Size = 0x40;
+    
     TSharedPtr<FSlateImageBrush> FlagBrush,         QuestionBrush,        BombBrush;
-    uint16                       NumMines = 0x0,    FreeTilesCount = 0x0, ClickedTiles = 0x0;
+    static constexpr uint16      Gmax_Size = 0x40;
+    uint16                       FreeTilesCount = 0x0, ClickedTiles = 0x0;
     uint16                       CurrRowSize = 0x5, CurrColSize = 0x5;
     uint16                       Ws = 0x0,          Ls = 0x0;
     FString                      SContainer = FString(TEXT(""));
@@ -277,7 +278,7 @@ private:
     TOptional<TSharedRef<STextBlock>> OptEndMsgRef, OptStatsRef, OptScoreRef;
     TSharedPtr<FObfuscator> Obfsctr;
     std::vector<int> NeighbourCheck = {0x0, -0x1, +0x1};
-    uint16 NextRowSize = 0x5, NextColSize = 0x5;
+    uint16 NextRowSize = 0x5, NextColSize = 0x5, NumMines = 0x0;
     EGameDifficulty NextDifficulty = EGameDifficulty::Normal;
 
 
@@ -419,21 +420,6 @@ public:
         }
     }
 
-    // Decode, 
-    static inline void
-    Dcde(FString & Argv, FString & ReturnParam)
-    {
-        // Split string by characters, simple put, acces from specific index
-        // remove first two bits of each char, then concentate into a large value, from start to end, tehn split into byte-size groups
-        unsigned char Step = 0x0;
-        unsigned char DcdStep = 0x0;
-        for (; Step < 0x18; Step += 0x4, DcdStep += 0x3) {
-            ReturnParam += static_cast<char>((Argv[Step] << 0x2) | (Argv[Step + 1] & 0x3));
-            ReturnParam += static_cast<char>((Argv[Step + 1] << 0x4) | ((Argv[Step + 2] & 0x3f) >> 0x2));
-            ReturnParam += static_cast<char>((Argv[Step + 2] << 0x6) | (Argv[Step + 3] & 0x3f));
-        }
-    }
-
     /** Global flipper */
     static inline void
     Flipper(FString & Flipper ,FString & ReturnParam)
@@ -447,8 +433,7 @@ public:
             Flipper += ReturnParam[(0x17 - Step)];
             Step++;
         }
-        // FDcde::Decode(Flipper, ReturnParam);
-        Dcde(Flipper, ReturnParam);
+        FDcde::Decode(Flipper, ReturnParam);
     }
 
 private:

@@ -179,7 +179,7 @@ struct FTileBinder {
     /**
     * @brief OnTileClick, function to bind to game-board tiles
     * @details
-    * @param TileCoords Coordinates of the tile which has been clicked
+    * @param Difficulty Requested Difficulty Setting
     * @param ManagerShared An FSysManager to trigger it's ClickTile() function
     * @retun returns an FReply::Handled() when finished.
     */
