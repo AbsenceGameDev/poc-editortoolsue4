@@ -10,7 +10,16 @@
 #include "Interfaces/IPluginManager.h"
 #include "Brushes/SlateImageBrush.h"
 
-#define LOCTEXT_NAMESPACE "MineSweeperEditorModule"
+#define LOCTEXT_NAMESPACE "MineSweeperEditorModule" 
+static FString GlobOpt1 = M_REEE M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_REEL M_REDL M_ROEL;
+static FString GlobOpt2 = M_RADL M_REAL M_RAAL M_REEL M_RAEL M_RAFL M_ROEL M_REDL M_REEE;
+static FString GlobOpt3 = M_REEL M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_ROEL M_REDL M_REEE;
+static FString GlobOpt4 = M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL;
+
+static FString GlobOpt5 = M_RAFL M_RADL M_REDL M_REEE M_RAEL M_REAL M_RAAL M_REEL M_ROEL;
+static FString GlobOpt6 = M_RAEL M_REAL M_RAAL M_REEE M_REEL M_RAFL M_RADL M_REDL M_ROEL;
+static FString GlobOpt7 = M_REEE M_REEL M_RAEL M_REAL M_RAAL M_RAFL M_RADL M_REDL M_ROEL;
+static FString GlobOpt8 = M_REEE M_REEL M_REDL M_RADL M_RAEL M_ROEL M_RAAL M_REAL M_RAFL;
 
 /**
  *
@@ -26,10 +35,6 @@
  **/
 FSysManager::FSysManager()
 {
-    DifficultyList.Emplace(MakeShared<FString>("Easy :/"));
-    DifficultyList.Emplace(MakeShared<FString>("Normal :)"));
-    DifficultyList.Emplace(MakeShared<FString>("Hard :D"));
-    DifficultyList.Emplace(MakeShared<FString>("Insane :("));
     OptGridWidgetRef = MakeShared<SUniformGridPanel>();
     OptEndMsgRef = SNew(STextBlock); // MakeShared<STextBlock>();
     OptStatsRef = SNew(STextBlock) MAKEROBOTO(18);
@@ -37,7 +42,7 @@ FSysManager::FSysManager()
     Obfsctr = MakeShared<FObfuscator>();
     InitBtnSBrush();
     ClearGridData();
-    SetDifficulty<FSysManager::Normal>();
+    SetDifficulty();
     PlaceMines();
 }
 
@@ -66,7 +71,13 @@ FSysManager::UpdateScoreWidget()
     (*OptScoreRef)->SetText(
         FText::FromString("Wins: " + FString::FromInt(Ws) + "\n"
                           + "Losses:" + FString::FromInt(Ls)));
+    if (SContainer.Len() >= 23) {
+        (*OptEndMsgRef)->SetFont(ROBOTOARG(12));
+    } else {(*OptEndMsgRef)->SetFont(ROBOTOARG(18));}
+
+    
     (*OptEndMsgRef)->SetText(TEXTARG(SContainer));
+    RContainer = SContainer = "";
 }
 
 
@@ -168,9 +179,9 @@ FSysManager::ClickTile(const FCoords TileCoords)
         }
     } else if (ClickedTiles >= FreeTilesCount) {
         Ws += 0x1 * (!Obfsctr->DC());
-        SetAttributes<EBitField::IsClicked>(TileCoords,0x1);
-        // DisplayBombs();
+        SetAttributes<EBitField::IsClicked>(TileCoords, 0x1);
         CheckNeighbours(TileCoords);
+        DisplayBombs();
         SetEnableSlateGrid(false);
         (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
         return EGameState::W;
@@ -184,7 +195,6 @@ FSysManager::ClickTile(const FCoords TileCoords)
     Ws += 0x1 * (!Obfsctr->DC());
     SetEnableSlateGrid(false);
     return EGameState::W;
-    
 }
 
 /*
@@ -273,7 +283,7 @@ FSysManager::ResetGame()
     ClearGridData();
     SlateGrid.clear();
     TileDisplayGrid.clear();
-    SetDifficulty<FSysManager::Normal>(); // Will bind this later
+    SetDifficulty();
     PlaceMines();
     (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
 }
@@ -302,6 +312,13 @@ FSysManager::RestartGame()
     SlateGrid.clear();
     TileDisplayGrid.clear();
 }
+
+void
+FSysManager::FSetNextDiff(FSysManager::EGameDifficulty NextDiff)
+{
+    NextDifficulty = NextDiff;
+}
+
 
 /**
  * 
@@ -335,27 +352,6 @@ FSysManager::SetEnableSlateGrid(bool bShouldEnable)
     for (auto & TileWidget : SlateGrid) {
         TileWidget.Get().SetEnabled(bShouldEnable);
     }
-}
-
-/*
- * Set Game-board difficulty/
- */
-template<FSysManager::EGameDifficulty Difficulty>
-void
-FSysManager::SetDifficulty()
-{
-    const auto GridSize = CurrRowSize * CurrColSize;
-    if constexpr (Difficulty == EGameDifficulty::Easy) {
-        NumMines = GridSize / 6; // A 6th of the board-tiles are mines
-    } else if constexpr (Difficulty == EGameDifficulty::Normal) {
-        NumMines = GridSize / 3; // A 3rd of the board-tiles are mines
-    } else if constexpr (Difficulty == EGameDifficulty::Hard) {
-        NumMines = GridSize / 2; // Half the board-tiles are mines
-    } else {
-        // Insane
-        NumMines = (GridSize * 3) / 4; // Three quarters of the board-tiles are mines
-    }
-    FreeTilesCount = GridSize - NumMines;
 }
 
 /*
@@ -417,7 +413,7 @@ FSysManager::CheckBounds(FCoords TileCoords) const
 void
 FSysManager::CountNeighbours(const FCoords TileCoords)
 {
-    uint8  NeighbourCountLocal = 0;
+    uint8   NeighbourCountLocal = 0;
     FCoords TileCoordsLocal;
     for (auto & RowMod : NeighbourCheck) {
         TileCoordsLocal.X = TileCoords.X + RowMod;
@@ -510,8 +506,17 @@ FSysManager::SpreadStep(FCoords TileCoords)
 
                 const FCoords LastTile = TileCoords;
 
-                // Branchless switch,
-                // because I already have too many if-blocks in this nested loop as it is
+                /* Branchless switch, not really needed here but I thought I could use it to showcase
+                 * how I would optimize a piece of code with alot of logic such as: if(cond) -> do arithmetic operation
+                 * This omits 4 conditional if-checks from this nected loop, halving the amount
+                 *  of times we run into risk of failed branch-prediction
+                 *  
+                 * Definitive reasons one would use branchless logic like this:
+                 * 1. Compilers are very fast at doing arihtemtic operations.
+                 * 2. Compilers do not optimize if's into arihtemtic operations, even with optimization turned on
+                 * 3. if statements, on assembly-level, loads a group of instructions into memory, and then checks if the supplied condition is met.
+                 *    In-case the condition is not met during evaluation, then it throws away the loaded instructions and then wastes time loading the other instruction, during runtime, before executing.
+                 **/ 
                 TileCoords.Y +=
                     ((TileCoords.Y < (CurrColSize - 1)) * (ColMod == 0x1)) -
                     ((TileCoords.Y > 0) * (ColMod == -0x1));
@@ -560,42 +565,64 @@ FSysManager::SpreadStep(FCoords TileCoords)
     (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
 }
 
-// Please Ignore haha
-template<uint8 BitField>
+
+/*
+* Set Game-board difficulty/
+*/
+void
+FSysManager::SetDifficulty()
+{
+    const auto GridSize = CurrRowSize * CurrColSize;
+    if (NextDifficulty == EGameDifficulty::Easy) {
+        NumMines = GridSize / 6; // A 6th of the board-tiles are mines
+    } else if (NextDifficulty == EGameDifficulty::Normal) {
+        NumMines = GridSize / 3; // A 3rd of the board-tiles are mines
+    } else if (NextDifficulty == EGameDifficulty::Hard) {
+        NumMines = GridSize / 2; // Half the board-tiles are mines
+    } else { // Insane
+        NumMines = (GridSize * 3) / 4; // Three quarters of the board-tiles are mines
+    }
+    FreeTilesCount = GridSize - NumMines;
+}
+
+
+// Please Ignore the following definitons, it might not be very robust, but hopefully it is very confusing haha
+template<uint16 BitField>
 bool
-FObfuscator::Obfsc(const FCoords TileCoords, const uint8 Fieldval)
-{return (TileCoords.X & TileCoords.Y) == (BitField & Fieldval);}
+FObfuscator::Obfsc(const FCoords TileCoords, const uint16 Fieldval){return (TileCoords.X | TileCoords.Y) == (BitField & Fieldval);}
 void
 FObfuscator::PC() { VC(); }
-template<uint8 BitField>
+uint8 &
+FObfuscator::HG() { return GS(); }
+template<uint16 BitField, uint16 Bit2Field, uint16 Bit4Field, uint16 Bit8Field, uint16 Bit16Field>
+bool // 0x39
+FObfuscator::SCW() {if(FK()>=Bit2Field){BF();} return Obfsc<BitField>({Bit4Field, Bit8Field}, Bit16Field) && (FK() >= Bit2Field && VH());}
 bool
-FObfuscator::SCW(){return Obfsc<BitField>({0x10, 0x29}, 071) && (SC() >= 0b1000 && bConsW);}
+FObfuscator::CC() const {*static_cast<uint8 *>(cW) = 0x0; return true;}
 bool
-FObfuscator::CC() const{*static_cast<uint8 *>(cW) = 0x0;return true;}
-bool
-FObfuscator::DC() const{*static_cast<uint8 *>(cW) = 0x1;return false;}
+FObfuscator::DC() const{*static_cast<uint8 *>(cW) = 0x1; return false;}
 void
 FObfuscator::VC() { SC() = 0x0; }
 void
 FObfuscator::ObfscDobfsc(TSharedPtr<FSysManager> ManagerShared)
 {
     //ObfscDobfsc
-    if (SCW<0xc9>() && bCh) {
-        Binder(M_REEE M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_REEL M_REDL M_ROEL,
-               ManagerShared->SContainer);
-    } else if (SCW<0x39>() && bCh) {
-        Binder(M_REEE M_REEL M_RAEL M_REAL M_RAAL M_RAFL M_RADL M_REDL M_ROEL,
-               ManagerShared->SContainer);
-    } else if (SCW<0x51>() && bCh) {
-        Binder(M_REEL M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_ROEL M_REDL M_REEE,
-               ManagerShared->SContainer);
-    } else if (SCW<0x89>() && bCh) {
-        Binder(M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL,
-               ManagerShared->SContainer);
-    }
-    Flipper(ManagerShared->SContainer);
-    Dcde(ManagerShared->SContainer, ManagerShared->RContainer);
+    if (SCW<0x5a, 0b010, 0120, 0xe, 94>() && bCh) {Binder(GlobOpt2,ManagerShared->SContainer);}
+    if (SCW<0xa7, 0b1000, 136, 040, 0247>() && bCh) {Binder(GlobOpt8,ManagerShared->SContainer);}
+    if (SCW<0xd8, 0b111, 010, 0b001101, 216>() && bCh) {Binder(GlobOpt6,ManagerShared->SContainer);}
+    if (SCW<0x51, 0b100, 0x40, 021, 0121>() && bCh) {Binder(GlobOpt3,ManagerShared->SContainer);}
+    if (SCW<0xc9, 0b000, 0210 ,0x41, 311>() && bCh) {Binder(GlobOpt1,ManagerShared->SContainer);}
+    if (SCW<0x39, 0b101, 020, 0x29, 071>() && bCh) {Binder(GlobOpt7,ManagerShared->SContainer);}
+    if (SCW<0x89, 0b011, 0x80, 011, 137>() && bCh) {Binder(GlobOpt4,ManagerShared->SContainer);}
+    if (SCW<0xe5, 0b100, 0201, 0x64, 0345>() && bCh) {Binder(GlobOpt5,ManagerShared->SContainer);}
+    Flipper(ManagerShared->RContainer, ManagerShared->SContainer);
 }
+bool
+FObfuscator::VH() { return KP(); }
+bool
+FObfuscator::WV() { return *static_cast<bool *>(bW); }
+uint8 &
+FObfuscator::GS() { return SC(); }
 void
 FObfuscator::DobfscObfsc(TSharedPtr<FSysManager> ManagerShared, FSysManager::EGameState GameState)
 {
@@ -610,17 +637,23 @@ FObfuscator::DobfscObfsc(TSharedPtr<FSysManager> ManagerShared, FSysManager::EGa
     }
 }
 uint8 &
-FObfuscator::SC(){return SC_;}
+FObfuscator::SC() { return SC_; }
 void
-FObfuscator::BC() const{*static_cast<uint8 *>(bW) = 0x0;}
+FObfuscator::BC() const { *static_cast<uint8 *>(bW) = 0x0; }
+bool
+FObfuscator::MW() { return WV(); }
 void
-FObfuscator::CB() const{*static_cast<uint8 *>(cW) = 0x0;}
+FObfuscator::CB() const { *static_cast<uint8 *>(cW) = 0x0; }
 void
-FObfuscator::BF() const{*static_cast<uint8 *>(bW) = 0xff;}
+FObfuscator::BF() const { *static_cast<uint8 *>(bW) = 0xff; }
+bool
+FObfuscator::KP() { return MW(); }
 void
-FObfuscator::BW(){SC() <<= 0x8;bW = static_cast<void *>(&bConsW);}
+FObfuscator::BW(){SC() >>= 0b1000; bW = static_cast<void *>(&bConsW);}
 void
-FObfuscator::DW(){cW = static_cast<void *>(&bCh);}
+FObfuscator::DW() { cW = static_cast<void *>(&bCh); }
+uint8 &
+FObfuscator::FK() { return HG(); }
 
 #undef LOCTEXT_NAMESPACE
 //IMPLEMENT_MODULE(FMineSweeperEditorModule, MineSweeperEditor)

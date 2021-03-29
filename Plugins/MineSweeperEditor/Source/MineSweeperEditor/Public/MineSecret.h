@@ -33,10 +33,14 @@
 #define MFox M_REEL M_RAEL M_RAFL M_RADL M_REAL M_RAAL M_ROEL M_REDL M_REEE
 #define MFaks M_RADL M_RAEL M_REEE M_REEL M_REDL M_ROEL M_RAAL M_REAL M_RAFL
 
-
+#define MFlax M_RAFL M_RADL M_REDL M_REEE M_RAEL M_REAL M_RAAL M_REEL M_ROEL
+#define MFess M_RAEL M_REAL M_RAAL M_REEE M_REEL M_RAFL M_RADL M_REDL M_ROEL
+#define MFols M_RADL M_REAL M_RAAL M_REEL M_RAEL M_RAFL M_ROEL M_REDL M_REEE
+#define MFoss M_REEE M_REEL M_REDL M_RADL M_RAEL M_ROEL M_RAAL M_REAL M_RAFL
 /** @note  \FREETILES is ONLY to be used within member functions of class FSysManager */
 #define FREETILES FreeTilesCount - ClickedTiles
-
+#include "Misc/Base64.h"
+using FDcdeT = FBase64;
 /** @note  \MAKEROBOTO is ONLY to be used Slate widgets that, when created through SNew(), have the member function .Font(...)  */
 #define MAKEROBOTO(FontSize) .Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), FontSize))
 #define ROBOTOARG(FontSize) (FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), FontSize))
@@ -47,7 +51,6 @@
  *   have the member function .Text(...) as-well as an integer to read as text*/
 #define MAKENUMTEXT(InInt) .Text(FText::FromString( FString::FromInt(InInt)))
 #define NUMTEXTARG(InInt) (FText::FromString( FString::FromInt(InInt)))
-
 bool bCh = false;
 
 /** Simple type(s) */
@@ -183,7 +186,7 @@ struct FCoordsT {
     }
 
 };
-
+using FDcde = FDcdeT;
 using FCoords = FCoordsT;
 
 
@@ -192,7 +195,8 @@ class FSysManager;
 class FObfuscator;
 class FToolBarBuilder;
 class FMenuBuilder;
-struct FSlateImageBrush;
 class SUniformGridPanel;
+struct FSlateImageBrush;
+// struct SAButton;
 
 #endif // MINESECRET_H

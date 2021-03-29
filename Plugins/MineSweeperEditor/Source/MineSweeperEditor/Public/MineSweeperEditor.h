@@ -138,7 +138,7 @@ private:
 
     /**
      * @brief Call when spawning window to spawn internal tab/page.
-     * @details Implements the initial SUniFormGrid, the New Game & Restart Game SButton, 
+     * @details Implements the initial SUniFormGrid, the New Game & Restart Game SAButton, 
      * the SSlider's, the welcome message and the win/loss SPopup 
      * @param SpawnTabArgs
      * @return The tab-page in the module window, through type: TSharedRef<class SDockTab>  
@@ -148,7 +148,6 @@ private:
 
     // EActiveTimerReturnType TriggerTextAnim(double InCurrentTime, float InDeltaTime);
 }; /** End of FMineSweeperEditorModule class */
-
 
 /**
  * @struct FTileBinder
@@ -185,6 +184,17 @@ struct FTileBinder {
     * @retun returns an FReply::Handled() when finished.
     */
     static FReply
+    OnDifficultyClick(FSysManager::EGameDifficulty Difficulty,
+                      TSharedPtr<FSysManager>      ManagerShared);
+
+    /**
+    * @brief OnTileClick, function to bind to game-board tiles
+    * @details
+    * @param TileCoords Coordinates of the tile which has been clicked
+    * @param ManagerShared An FSysManager to trigger it's ClickTile() function
+    * @retun returns an FReply::Handled() when finished.
+    */
+    static FReply
     OnTileClick(FCoords                 TileCoords,
                 TSharedPtr<FSysManager> ManagerShared);
 
@@ -193,7 +203,7 @@ struct FTileBinder {
      * @details
      * @param TileCoords Given coordinates at which I tile will be created 
      * @param ManagerShared FSysManager pointer to pass through to internal function call
-     * @return TSharedRef<SWidget>, a shared reference to the tile (SButton widget)
+     * @return TSharedRef<SWidget>, a shared reference to the tile (SAButton widget)
      */
     static TSharedRef<SWidget>
     MakeTile(const FCoords TileCoords,

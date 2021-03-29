@@ -43,6 +43,9 @@ FSysManager::GetPrivateMemberRef() -> auto&
     if constexpr (PrivateMember == EPrivateMember::VectorSlateGrid) {
         return SlateGrid;
     }
+    if constexpr (PrivateMember == EPrivateMember::VectorDifficultyList) {
+        return DifficultyList;
+    }
     if constexpr (PrivateMember == EPrivateMember::VectorTileDisplayGrid) {
         return TileDisplayGrid;
     }
@@ -96,7 +99,7 @@ FMineSweeperEditorModule::StartupModule()
 
     PluginCmds = MakeShareable(new FUICommandList);
     SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->DW();
-    SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->SC() = 0b0;
+    SysManager->GetPrivateMemberRef<FSysManager::FObfsctr>()->HG() = 0b0;
     PluginCmds->MapAction(
         FMineSweeperEditorCommands::Get().WindowContext,
         FExecuteAction::CreateRaw(this, &FMineSweeperEditorModule::TabBtnClicked),
@@ -258,9 +261,8 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 {
     TSharedRef<SGridPanel> MainField = SNew(SGridPanel);
     const FText            WelcomeText = LOCTEXT("MineSweeperPrompt0",
-                                                 "Welcome to MineSweeper. \n Win 8 matches during one session to uncover a secret! \n"
-                                                 "(Win/Loss is saved, but Secret Count resets when closing the editor. \nSecret count is only applicable on hard or above. \n"
-                                                 "Please, no cheating by looking at source code. \nIn case you do, I have tried obfuscating it alot haha.)");
+                                                 "Welcome to MineSweeper. \n Win 5 matches during one session to uncover a secret! \n"
+                                                 "Please, no cheating by looking at source code. \nIn case you do, I have tried obfuscating it haha.)");
     MainField->AddSlot(0x0, 0x0)
     [
         SNew(STextBlock).Text(WelcomeText)
@@ -387,10 +389,30 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
     MainField->AddSlot(0x0, 0x1)
     [
         *SysManager->GetPrivateMemberRef<FSysManager::STextEndMsgRef>() =
-        SNew(STextBlock)
+        SNew(STextBlock).Text(FText::FromString("END-GAME MSG!"))
         MAKEROBOTO(28)
     ];
 
+    TSharedRef<SButton> BtnEasy = SNew(SButton)
+                                  MAKETEXT("Easy :/")
+                                  .OnClicked_Static(&FTileBinder::OnDifficultyClick,
+                                                    FSysManager::Easy,
+                                                    SysManager);
+    TSharedRef<SButton> BtnNormal = SNew(SButton)
+                                    MAKETEXT("Normal :)")
+                                    .OnClicked_Static(&FTileBinder::OnDifficultyClick,
+                                                      FSysManager::Normal,
+                                                      SysManager);
+    TSharedRef<SButton> BtnHard = SNew(SButton)
+                                  MAKETEXT("Hard :D")
+                                  .OnClicked_Static(&FTileBinder::OnDifficultyClick,
+                                                    FSysManager::Hard,
+                                                    SysManager);
+    TSharedRef<SButton> BtnInsane = SNew(SButton)
+                                    MAKETEXT("Insane :(")
+                                    .OnClicked_Static(&FTileBinder::OnDifficultyClick,
+                                                      FSysManager::Insane,
+                                                      SysManager);
     // Show GameData == Free tiles left to click
     // replace .Text with .Text_Raw and bind it to a function which reflects changes on SContainer or R00Container
     MainField->AddSlot(0x2, 0x0)
@@ -414,6 +436,30 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
         [
             *SysManager->GetPrivateMemberRef<FSysManager::STextStatsRef>()
         ]
+        + SWrapBox::Slot().Padding(10, 5)
+        [
+            SNew(SHorizontalBox)
+            + SHorizontalBox::Slot()
+            .AutoWidth()
+            [
+                BtnEasy
+            ]
+            + SHorizontalBox::Slot()
+            .AutoWidth()
+            [
+                BtnNormal
+            ]
+            + SHorizontalBox::Slot()
+            .AutoWidth()
+            [
+                BtnHard
+            ]
+            + SHorizontalBox::Slot()
+            .AutoWidth()
+            [
+                BtnInsane
+            ]
+        ]
     ];
 
     // Game-board / Gridpanel
@@ -424,6 +470,10 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
         = GenerateGrid(SysManager->CurrRowSize, SysManager->CurrColSize)
     ];
 
+    SysManager->GetPrivateMemberRef<FSysManager::VectorDifficultyList>().emplace_back(BtnEasy);
+    SysManager->GetPrivateMemberRef<FSysManager::VectorDifficultyList>().emplace_back(BtnNormal);
+    SysManager->GetPrivateMemberRef<FSysManager::VectorDifficultyList>().emplace_back(BtnHard);
+    SysManager->GetPrivateMemberRef<FSysManager::VectorDifficultyList>().emplace_back(BtnInsane);
     // Quick implementation of scrolling to be able to show a max-size playingboard,
     // does cause issues in order of priority,but it is not very problematic in this case
     return
@@ -440,14 +490,6 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
             ]
         ];
 }
-
-// We want to zoom in a widget, and then fade in its contents.
-// EActiveTimerReturnType
-// FMineSweeperEditorModule::TriggerTextAnim(double InCurrentTime, float InDeltaTime)
-// {
-// 
-//     return EActiveTimerReturnType::Continue;
-// }
 
 
 /** Create New Game event */
@@ -482,14 +524,46 @@ FTileBinder::RestartGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<
     return FReply::Handled();
 }
 
+/** On Difficulty Button Click event */
+FReply
+FTileBinder::OnDifficultyClick(FSysManager::EGameDifficulty Difficulty, TSharedPtr<FSysManager> ManagerShared)
+{
+    ManagerShared->FSetNextDiff(Difficulty);
+    auto & DiffVector = ManagerShared->GetPrivateMemberRef<FSysManager::VectorDifficultyList>();
+    switch (Difficulty) {
+        case FSysManager::Easy: DiffVector.at(0x0)->SetEnabled(false);
+            DiffVector.at(0x1)->SetEnabled(true);
+            DiffVector.at(0x2)->SetEnabled(true);
+            DiffVector.at(0x3)->SetEnabled(true);
+            break;
+        case FSysManager::Normal: DiffVector.at(0x0)->SetEnabled(true);
+            DiffVector.at(0x1)->SetEnabled(false);
+            DiffVector.at(0x2)->SetEnabled(true);
+            DiffVector.at(0x3)->SetEnabled(true);
+            break;
+        case FSysManager::Hard: DiffVector.at(0x0)->SetEnabled(true);
+            DiffVector.at(0x1)->SetEnabled(true);
+            DiffVector.at(0x2)->SetEnabled(false);
+            DiffVector.at(0x3)->SetEnabled(true);
+            break;
+        case FSysManager::Insane: DiffVector.at(0x0)->SetEnabled(true);
+            DiffVector.at(0x1)->SetEnabled(true);
+            DiffVector.at(0x2)->SetEnabled(true);
+            DiffVector.at(0x3)->SetEnabled(false);
+            break;
+    }
+    return FReply::Handled();
+}
+
+
 /** On Tile Click event */
 FReply
 FTileBinder::OnTileClick(FCoords TileCoords, TSharedPtr<FSysManager> ManagerShared)
 {
     auto ObfsPtr = ManagerShared->GetPrivateMemberRef<FSysManager::FObfsctr>();
     ObfsPtr->DobfscObfsc(ManagerShared, ManagerShared->ClickTile(TileCoords));
-    ManagerShared->UpdateScoreWidget(); // Update just in-case win or loss has occured
     ObfsPtr->ObfscDobfsc(ManagerShared);
+    ManagerShared->UpdateScoreWidget(); // Update just in-case win or loss has occured
     return FReply::Handled();
 }
 
@@ -507,8 +581,8 @@ FTileBinder::MakeTile(const FCoords TileCoords,
                                        .ColorAndOpacity(FLinearColor(0, 0, 0, 1));
     TSharedRef<SButton> Btn =
         SNew(SButton)
-            .OnClicked_Static(&FTileBinder::OnTileClick, TileCoords, ManagerShared)
-            .ForegroundColor(FSlateColor::UseForeground())
+        .OnClicked_Static(&FTileBinder::OnTileClick, TileCoords, ManagerShared)
+        .ForegroundColor(FSlateColor::UseForeground())
         [
             SNew(SBorder).BorderImage(ManagerShared->BombBrush.Get())
             [

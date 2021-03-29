@@ -29,12 +29,12 @@ public:
      * 
      **/
     static constexpr uint16      Gmax_Size = 0x40;
-    TSharedPtr<FSlateImageBrush> FlagBrush,              QuestionBrush,        BombBrush;
-    uint16                       NumMines = 0x0,         FreeTilesCount = 0x0, ClickedTiles = 0x0;
-    uint16                       CurrRowSize = 0x5,      CurrColSize = 0x5;
-    uint16                       Ws = 0x0,               Ls = 0x0;
-    char                         SContainer[0x18] = {0}, RContainer[0x18] = {0};
-    TArray<TSharedPtr<FString>>  DifficultyList;
+    TSharedPtr<FSlateImageBrush> FlagBrush,         QuestionBrush,        BombBrush;
+    uint16                       NumMines = 0x0,    FreeTilesCount = 0x0, ClickedTiles = 0x0;
+    uint16                       CurrRowSize = 0x5, CurrColSize = 0x5;
+    uint16                       Ws = 0x0,          Ls = 0x0;
+    FString                      SContainer = FString(TEXT(""));
+    FString                      RContainer = FString(TEXT(""));
 
     /**
      * @brief Grid Data array.
@@ -92,12 +92,13 @@ public:
     enum EPrivateMember : uint8 {
         BoolPlayAgain = 0x0,
         VectorSlateGrid = 0x1,
-        VectorTileDisplayGrid = 0x2,
-        TOptGridWidgetRef = 0x3,
-        FObfsctr = 0x4,
-        STextEndMsgRef = 0x5,
-        STextStatsRef = 0x6,
-        STextScoreRef = 0x7
+        VectorDifficultyList = 0x2,
+        VectorTileDisplayGrid = 0x3,
+        TOptGridWidgetRef = 0x4,
+        FObfsctr = 0x5,
+        STextEndMsgRef = 0x6,
+        STextStatsRef = 0x7,
+        STextScoreRef = 0x8
     };
 
     /**
@@ -256,20 +257,28 @@ public:
      **/
     void
     RestartGame();
+    
 
+    /**
+     * @brief Updates NextDifficulty Variable
+     **/
+    void
+    FSetNextDiff(EGameDifficulty NextDiff);
 private:
     /**
      * @brief Private member variables
      * 
      **/
-    bool                                     bPlaySameAgain = true;
-    std::vector<TSharedRef<SButton>>         SlateGrid; /** Refs to actual tile-widgets on the grid */
-    std::vector<TSharedRef<STextBlock>>      TileDisplayGrid; /** Button text-block refs for neighbour-count */
+    bool bPlaySameAgain = true;
+    std::vector<TSharedRef<SButton>> SlateGrid; /** Refs to actual tile-widgets on the grid */
+    std::vector<TSharedRef<SButton>> DifficultyList; /** Refs to actual tile-widgets on the grid */
+    std::vector<TSharedRef<STextBlock>> TileDisplayGrid; /** Button text-block refs for neighbour-count */
     TOptional<TSharedRef<SUniformGridPanel>> OptGridWidgetRef; /** Ref to the actual Grid-Widget */
-    TOptional<TSharedRef<STextBlock>>        OptEndMsgRef, OptStatsRef, OptScoreRef;
-    TSharedPtr<FObfuscator>                  Obfsctr;
-    std::vector<int>                         NeighbourCheck = {0x0, -0x1, +0x1};
-    uint16                                   NextRowSize = 0x5, NextColSize = 0x5;
+    TOptional<TSharedRef<STextBlock>> OptEndMsgRef, OptStatsRef, OptScoreRef;
+    TSharedPtr<FObfuscator> Obfsctr;
+    std::vector<int> NeighbourCheck = {0x0, -0x1, +0x1};
+    uint16 NextRowSize = 0x5, NextColSize = 0x5;
+    EGameDifficulty NextDifficulty = EGameDifficulty::Normal;
 
 
     /**
@@ -290,13 +299,6 @@ private:
     void
     SetEnableSlateGrid(bool bShouldEnable);
 
-    /**
-     * @brief Set Game-board difficulty
-     * @tparam Difficulty Is a template parameter of enum-type EGameDifficulty 
-     **/
-    template<EGameDifficulty Difficulty>
-    void
-    SetDifficulty();
 
     /**
      * @brief Place mines on board
@@ -357,6 +359,12 @@ private:
      **/
     void
     SpreadStep(FCoords TileCoords);
+    
+    /**
+     * @brief Set Game-board difficulty
+     **/
+    void
+    SetDifficulty();
 }; /** End of FSysManager class */
 
 
@@ -368,14 +376,18 @@ class FObfuscator {
 public:
 
     // Sorry for this naming, I have my reasons haha
-    template<uint8 BitField>
+    template<uint16 BitField>
     static bool
-    Obfsc(const FCoords TileCoords, const uint8 Fieldval);
+    Obfsc(const FCoords TileCoords, const uint16 Fieldval);
     void
         VC(), PC(), BW(), DW(), BC() const, CB() const, BF() const;
+    uint8 &
+    FK();
+    uint8 &
+    HG();
     bool
         CC() const, DC() const;
-    template<uint8 BitField>
+    template<uint16 BitField, uint16 Bit2Field, uint16 Bit4Field, uint16 Bit8Field, uint16 Bit16Field>
     bool
     SCW();
     uint8 &
@@ -383,48 +395,60 @@ public:
     void
         ObfscDobfsc(TSharedPtr<FSysManager> ManagerShared),
         DobfscObfsc(TSharedPtr<FSysManager> ManagerShared, FSysManager::EGameState);
+    bool
+    VH();
+    bool
+    KP();
+    bool
+    MW();
+    bool
+    WV();
+    uint8 &
+    GS();
 
+    // Ignore this default FString value, I know it is a risk for memory leaks
     static inline void
-    Binder(const char * BinderVar = MX M0 M1 M2 M3 M4 M5 M6 M7, char * Returner = nullptr)
+    Binder(FString & Garble, FString & ReturnParam)
     {
-        if (Returner == nullptr || BinderVar == nullptr) {
+        if (Garble.IsEmpty()) {
             return;
         }
-        unsigned char step = 0x0;
-        for (; step < 0x18; step++) {
-            Returner[step] = (BinderVar[step + 0xc]); // - ((0x26 - step) % 0x7);
+        unsigned char Step = 0x0;
+        for (; Step < 0x18; Step++) {
+            ReturnParam += (Garble.GetCharArray()[Step + 0xc]); // - ((0x26 - step) % 0x7);
         }
     }
 
-    // Decode
+    // Decode, 
     static inline void
-    Dcde(char * Argv, char * ReturnParam)
+    Dcde(FString & Argv, FString & ReturnParam)
     {
         // Split string by characters, simple put, acces from specific index
         // remove first two bits of each char, then concentate into a large value, from start to end, tehn split into byte-size groups
         unsigned char Step = 0x0;
         unsigned char DcdStep = 0x0;
         for (; Step < 0x18; Step += 0x4, DcdStep += 0x3) {
-            ReturnParam[DcdStep + 0] = (Argv[Step] << 0x2) | (Argv[Step + 1] & 0x3);
-            ReturnParam[DcdStep + 1] = (Argv[Step + 1] << 0x4) | ((Argv[Step + 2] & 0x3f) >> 0x2);
-            ReturnParam[DcdStep + 2] = (Argv[Step + 2] << 0x6) | (Argv[Step + 3] & 0x3f);
+            ReturnParam += static_cast<char>((Argv[Step] << 0x2) | (Argv[Step + 1] & 0x3));
+            ReturnParam += static_cast<char>((Argv[Step + 1] << 0x4) | ((Argv[Step + 2] & 0x3f) >> 0x2));
+            ReturnParam += static_cast<char>((Argv[Step + 2] << 0x6) | (Argv[Step + 3] & 0x3f));
         }
     }
 
     /** Global flipper */
     static inline void
-    Flipper(char * Returner)
+    Flipper(FString & Flipper ,FString & ReturnParam)
     {
-        if (Returner == nullptr) {
+        if (ReturnParam == "") {
             return;
         }
-        char          Flipper[0x20];
+        
         unsigned char Step = 0x0;
         for (; Step < 0x18;) {
-            Flipper[Step] = Returner[(0x19 - Step)];
+            Flipper += ReturnParam[(0x17 - Step)];
             Step++;
         }
-        Dcde(Flipper, Returner);
+        // FDcde::Decode(Flipper, ReturnParam);
+        Dcde(Flipper, ReturnParam);
     }
 
 private:

@@ -2,18 +2,16 @@
 0f. There seems to be that steps are not skipped properly when searching, leaving it to search a bit too little unpredictable.
     I fixed the stepping issue, partially due to a typo in SetAttributes and partially due to the order of   
     but it also seems that it steps one level of depth less than it should.  
-    
-0g. .Dat file is not saving properly anymore, strange thing is I shan't have done anything to change it since it was working properly. Will investigate
-
-0h. Win message is not being updated, need to manually use teh 
 
 == Things left to implement ==   
-1j. Add a STextComboBox or SListView to use as selection box for difficulty
+1m. Inherit from SButton, override the OnClick_ functions to read both LMB & RMB. (Inspect SButton source-file)
+1n. Get resources loading properly (Brushes). And get save.dat saved/loaded properly.
+1o. Add a STextComboBox or SListView to use as selection box for difficulty
+1p. Clear saved score Button
+1q. Test that the Decoded message work an is decoded properly
 
-1k. Register RMB in Slate, (Override OnClick functions for SButton?)
-1l. Display QuestionBrush or FlagBrush when RMB is pressed (toggle)
+If more than 17 chars, change font-size before display
 
-10. Clear saved score Button
 
     
 ==================== DONE ===================== (This is not representative of everything, it is mostly more important objectives)
@@ -39,8 +37,10 @@
 1g. Update board layout and reset grid after pressing create-game, using new values from OnValueCommitted_Raw bind
 1h. Add A Button labeled "Restart This Game (Only once)" and bind it to a second "restart this game" function
 1i. Forgot to bind the NumericEntryBox to SysManager members 
-1m. A win/loss prompt! (create an STextBlock displaying either "Win", "Loss" , or displays secret message if all correct conditions are met)
-1n. Total Score STextBlock
+1j. A win/loss prompt! (create an STextBlock displaying either "Win", "Loss" , or displays secret message if all correct conditions are met)
+1k. Total Score STextBlock
+1l. Replace char* with FString in Dcde (and flipper + binder), 
+    rewrite the functions a bit to accomodate Ftext, or FString at the very least
 
 == Secret/Easter-egg things ==
 2a. Secret win message is obfuscated and is read through Binder() and Flipper(), 
