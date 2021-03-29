@@ -24,10 +24,11 @@
  **/
 class FSysManager {
 public:
-    /**
-     * @brief Public member variables
+    
+    /*
+     * Public member variables
      * 
-     **/
+     */
     
     TSharedPtr<FSlateImageBrush> FlagBrush,         QuestionBrush,        BombBrush;
     static constexpr uint16      Gmax_Size = 0x40;
@@ -48,11 +49,12 @@ public:
      **/
     std::array<std::array<uint8, Gmax_Size>, Gmax_Size> GridData = {0};
 
-    /**
-     * @brief Public member enums
+    
+    /*
+     * Public member enums
      * 
-     **/
-
+     */
+    
     /**
      * @brief Game-difficulty enum
      * @type EGameDifficulty : uint8
@@ -63,7 +65,7 @@ public:
         Hard = 0x2,
         Insane = 0x3
     };
-
+    
     /**
      * @brief Game-state enum
      * @type EGameState : uint8
@@ -102,10 +104,10 @@ public:
         STextScoreRef = 0x8
     };
 
-    /**
-     * @brief Public member functions
+    /*
+     * Public member functions
      * 
-     **/
+     */
 
     /**
      * @brief FSysManager constructor
@@ -231,7 +233,7 @@ public:
 
     /**
      * @brief Save session scores
-     * @note Saves sessions score to file, in plugin/MineSweeperEditor/Resources/data/
+     * @details Saves sessions score to file, in plugin/MineSweeperEditor/Resources/data/
      * If directory does not exist, then it will be created.  
      **/
     void
@@ -239,7 +241,7 @@ public:
 
     /**
      * @brief Loads saved score
-     * @note Loads score from file, in plugin/MineSweeperEditor/Resources/data/
+     * @details Loads score from file, in plugin/MineSweeperEditor/Resources/data/
      * If directory/file do not exist, then it will not load any data into the total score.  
      **/
     void
@@ -253,7 +255,7 @@ public:
     ResetGame();
 
     /**
-     * @brief  Restart game / end game
+     * @brief  Restart game / end game.
      * Pretty self-explanatory
      **/
     void
@@ -271,21 +273,21 @@ private:
      * 
      **/
     bool bPlaySameAgain = true;
-    std::vector<TSharedRef<SButton>> SlateGrid; /** Refs to actual tile-widgets on the grid */
-    std::vector<TSharedRef<SButton>> DifficultyList; /** Refs to actual tile-widgets on the grid */
-    std::vector<TSharedRef<STextBlock>> TileDisplayGrid; /** Button text-block refs for neighbour-count */
-    TOptional<TSharedRef<SUniformGridPanel>> OptGridWidgetRef; /** Ref to the actual Grid-Widget */
-    TOptional<TSharedRef<STextBlock>> OptEndMsgRef, OptStatsRef, OptScoreRef;
-    TSharedPtr<FObfuscator> Obfsctr;
-    std::vector<int> NeighbourCheck = {0x0, -0x1, +0x1};
-    uint16 NextRowSize = 0x5, NextColSize = 0x5, NumMines = 0x0;
-    EGameDifficulty NextDifficulty = EGameDifficulty::Normal;
+    std::vector<TSharedRef<SButton>> SlateGrid; /** @brief Refs to actual tile-widgets on the grid */
+    std::vector<TSharedRef<SButton>> DifficultyList; /** @brief Refs to actual tile-widgets on the grid */
+    std::vector<TSharedRef<STextBlock>> TileDisplayGrid; /** @brief Button text-block refs for neighbour-count */
+    TOptional<TSharedRef<SUniformGridPanel>> OptGridWidgetRef; /** @brief Ref to the actual Grid-Widget */
+    TOptional<TSharedRef<STextBlock>> OptEndMsgRef, OptStatsRef, OptScoreRef; /** @brief Refs to different textblocks*/
+    TSharedPtr<FObfuscator> Obfsctr; /** @brief Ptr to Obfuscator */
+    std::vector<int> NeighbourCheck = {0x0, -0x1, +0x1}; /** @brief Direction check vector */
+    uint16 NextRowSize = 0x5, NextColSize = 0x5, NumMines = 0x0; /** @brief Next dimensions & Number of Mines */
+    EGameDifficulty NextDifficulty = EGameDifficulty::Normal; /** @brief Next Difficulty, is loaded at new game */
 
 
-    /**
-     * @brief Private member functions
+    /*
+     * Private member functions
      * 
-     **/
+     */
 
     /**
      * @brief Clears grid data.  
@@ -366,7 +368,7 @@ private:
      **/
     void
     SetDifficulty();
-}; /** End of FSysManager class */
+}; // End of FSysManager class 
 
 
 /** @class FObfuscator
@@ -444,6 +446,6 @@ private:
         * cW = nullptr;
 
 
-}; /** End of FObfuscator class */
+}; // End of FObfuscator class 
 
 #endif // FSYS_MANAGER_H

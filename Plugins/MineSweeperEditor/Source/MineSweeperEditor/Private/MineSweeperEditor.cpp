@@ -66,15 +66,15 @@ FSysManager::GetPrivateMemberRef() -> auto&
     }
 }
 
-/**
-* 
-* @brief FMineSweeperEditorModule::  Public member functions
-* @function FMineSweeperEditorModule()
-* @function void StartupModule(), ShutdownModule(), TabBtnClicked() const
-* @function void CommittedX(const FText& NewText, ETextCommit::Type CommitType)
-* @function void CommittedY(const FText& NewText, ETextCommit::Type CommitType)
-* 
-*/
+/*
+ * 
+ * FMineSweeperEditorModule::  Public member functions
+ * @function FMineSweeperEditorModule()
+ * @function void StartupModule(), ShutdownModule(), TabBtnClicked() const
+ * @function void CommittedX(const FText& NewText, ETextCommit::Type CommitType)
+ * @function void CommittedY(const FText& NewText, ETextCommit::Type CommitType)
+ * 
+ */
 
 /*
  * FMineSweeperEditorModule constructor
@@ -87,12 +87,11 @@ FMineSweeperEditorModule::FMineSweeperEditorModule()
 }
 
 /*
-* Call when loading module.
-*/
+ * Call when loading module.
+ */
 void
 FMineSweeperEditorModule::StartupModule()
 {
-    /** This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module */
     FMineSweeperEditorStyle::Init();
     FMineSweeperEditorStyle::ReloadTextures();
     FMineSweeperEditorCommands::Register();
@@ -158,7 +157,7 @@ FMineSweeperEditorModule::CommittedX(const uint8       NewInt,
 }
 
 /*
- * Set Cow size Value
+ * Set Col size Value
  */
 void
 FMineSweeperEditorModule::CommittedY(const uint8       NewInt,
@@ -169,14 +168,14 @@ FMineSweeperEditorModule::CommittedY(const uint8       NewInt,
         (NewInt * (NewInt > 0x0 && NewInt < 0x40)) | (0x5 * (NewInt < 0x1 || NewInt > 0x3f));
 }
 
-/**
+/*
  *
- * @brief FMineSweeperEditorModule::  Private member functions 
+ * FMineSweeperEditorModule::  Private member functions 
  * @function void RegisterMenus() 
  * @function TSharedRef<SUniformGridPanel> GenerateGrid(uint8, uint8) const 
  * @function TSharedRef<SDockTab> OnSpawnTab(const FSpawnTabArgs&) const
  *
- **/
+ */
 
 /*
  * Register level editor menu
@@ -213,7 +212,7 @@ FMineSweeperEditorModule::RegisterMenus()
 TSharedRef<SUniformGridPanel>
 FMineSweeperEditorModule::GenerateGrid(uint8 Xin, uint8 Yin) const
 {
-    /** Actual function body in GenerateGrid */
+    // Actual function body in GenerateGrid
     TSharedRef<SUniformGridPanel> IdxField = SNew(SUniformGridPanel);
     if (Xin < 0x1 || Yin < 0x1 || Xin > 0x40 || Yin > 0x40) {
         return IdxField; // Return empty grid, should make as an assertion, but this works temporarily
@@ -233,12 +232,12 @@ FMineSweeperEditorModule::GenerateGrid(uint8 Xin, uint8 Yin) const
 }
 
 /*
-* Regenerate Slate Grid 
-*/
+ * Regenerate Slate Grid 
+ */
 void
 FMineSweeperEditorModule::RegenerateGrid(uint8 Xin, uint8 Yin, TSharedRef<SUniformGridPanel> IdxField) const
 {
-    /** Actual function body in GenerateGrid */
+    // Actual function body in GenerateGrid
     uint16  Row = 0, Col = 0;
     FCoords TileCoords;
     for (Row = 0; Row < Yin;) {
@@ -480,22 +479,22 @@ FMineSweeperEditorModule::OnSpawnTab(const FSpawnTabArgs & SpawnTabArgs) const
 }
 
 
-/**
+/*
  *
- * @brief TileBinder::  Public member functions 
+ * TileBinder::  Public member functions 
  * @function FReply NewGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
  * @function FReply RestartGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
  * @function FReply OnDifficultyClick(FSysManager::EGameDifficulty Difficulty, TSharedPtr<FSysManager> ManagerShared)
  * @function FReply OnTileClick(FCoords TileCoords, TSharedPtr<FSysManager> ManagerShared)
  * @function TSharedRef<SWidget> MakeTile(const FCoords TileCoords, TSharedPtr<FSysManager> ManagerShared)
  *
- **/
+ */
 
 /** Create New Game event */
 FReply
 FTileBinder::NewGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
 {
-    /** Reset game in SysManager, generate new slategrid, etc*/
+    // Reset game in SysManager, generate new slategrid, etc
     Manager->ResetGame();
     Manager->GetPrivateMemberRef<FSysManager::TOptGridWidgetRef>()->Get().ClearChildren();
     Owner->RegenerateGrid(Manager->CurrRowSize,
@@ -509,7 +508,7 @@ FTileBinder::NewGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSys
 FReply
 FTileBinder::RestartGameBind(const FMineSweeperEditorModule * Owner, TSharedPtr<FSysManager> Manager)
 {
-    /** Restart last game in SysManager, generate new slategrid, etc*/
+    // Restart last game in SysManager, generate new slategrid, etc
     if (!Manager->GetPrivateMemberRef<FSysManager::BoolPlayAgain>() || Manager->ClickedTiles == 0x0) {
         return FReply::Unhandled();
     }
@@ -529,6 +528,8 @@ FTileBinder::OnDifficultyClick(FSysManager::EGameDifficulty Difficulty, TSharedP
 {
     ManagerShared->FSetNextDiff(Difficulty);
     auto & DiffVector = ManagerShared->GetPrivateMemberRef<FSysManager::VectorDifficultyList>();
+
+    // Not pretty, I know, was in a bit of a hurry here and had to get it implemented
     switch (Difficulty) {
         case FSysManager::Easy: DiffVector.at(0x0)->SetEnabled(false);
             DiffVector.at(0x1)->SetEnabled(true);

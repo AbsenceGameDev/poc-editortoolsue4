@@ -57,7 +57,7 @@ bool bCh = false;
 
 /**
  * @brief  Simple 2d Coordinate struct 
- * Compiler issues due to contrained hardware, could not create proper default operators,
+ * @details Compiler issues due to constrained hardware, could not create proper default operators,
  * It wasn't doing the logical nor arithmetic operations properly in some cases and in other it was just getting errors.
  * Errors of mismatch types and undefined operators, so I decided I had to define some myself, and fix whatever ails my computer later.
  **/
@@ -66,7 +66,7 @@ struct FCoordsT {
     uint16 Y;
 
 
-    /** Arithmetic operations */
+    // Arithmetic operations
     FCoordsT
     operator =(const FCoordsT & C2)
     {
@@ -189,7 +189,6 @@ struct FCoordsT {
 using FDcdeT = FBase64;
 using FDcde = FDcdeT;
 using FCoords = FCoordsT;
-
 
 // Forawrd declrs.
 class FSysManager;

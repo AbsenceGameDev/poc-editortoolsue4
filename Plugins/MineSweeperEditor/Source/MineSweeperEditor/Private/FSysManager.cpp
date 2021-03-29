@@ -12,9 +12,9 @@
 
 #define LOCTEXT_NAMESPACE "MineSweeperEditorModule"
 
-/**
+/*
  *
- * @brief FSysManager::  Public member functions 
+ * FSysManager::  Public member functions 
  * @function void FSysManager(), InitBtnSBrush() 
  * @function TSharedRef<SButton> GetGridFSlot(Coords)
  * @function FSysManager::EGameState ClickTile(uint8, uint8)
@@ -23,7 +23,7 @@
  * @function void SetAttributes<FSysManager::EBitField>(const Coords, const uint8);
  * @function void ResetGame()
  * 
- **/
+ */
 FSysManager::FSysManager()
 {
     OptGridWidgetRef = MakeShared<SUniformGridPanel>();
@@ -153,9 +153,9 @@ FSysManager::EGameState
 FSysManager::ClickTile(const FCoords TileCoords)
 {
     ClickedTiles++;
-    /** If clicked on Mine */
+    // If clicked on Mine
     if (GetAttributes<EBitField::IsMine>(TileCoords)) {
-        /** If first tile is clicked */
+        // If first tile is clicked
         if (ClickedTiles == 0x1) {
             ReplaceMine(TileCoords);
         } else {
@@ -176,7 +176,7 @@ FSysManager::ClickTile(const FCoords TileCoords)
         return EGameState::W;
     }
     (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
-    /** path to handle checking tile and freeing it */
+    // Path to handle checking tile and freeing it
     SpreadStep(TileCoords);
     if (ClickedTiles < FreeTilesCount) {
         return EGameState::P;
@@ -311,7 +311,7 @@ FSysManager::FSetNextDiff(FSysManager::EGameDifficulty NextDiff)
 }
 
 
-/**
+/*
  * 
  * FSysManager::  Private member functions
  * @function void ClearGridData()
@@ -322,7 +322,7 @@ FSysManager::FSetNextDiff(FSysManager::EGameDifficulty NextDiff)
  * @function void CheckNeighbours(const Coords) 
  * @function void SpreadStep(Coords) 
  *
- **/
+ */
 
 /*
 * Clear GridData
@@ -353,19 +353,18 @@ FSysManager::PlaceMines()
 {
     const auto GridSize = CurrRowSize * CurrColSize;
 
-    /** Continue until all random mines have been created. */
+    // Continue until all random mines have been created.
     for (int PlacedCount = 0; PlacedCount < NumMines;) {
         const auto   Random = FMath::RandRange(0x0, GridSize);
         const uint16 X = Random / CurrRowSize;
         const uint16 Y = Random % CurrColSize;
 
-        /** Add the mine if no mine is placed at this position on the board */
+        // Add the mine if no mine is placed at this position on the board
         if (!GetAttributes<EBitField::IsMine>({X, Y})) {
             SetAttributes<EBitField::IsMine>({X, Y}, 0x1);
             PlacedCount++;
         }
     }
-    return; // symbolic
 }
 
 /**
@@ -375,11 +374,11 @@ void
 FSysManager::ReplaceMine(FCoords TileCoords)
 {
     if (!GetAttributes<EBitField::IsMine>({TileCoords.X, TileCoords.Y})) {
-        return; /** Already no mine here, function called by mistake */
+        return; // Already no mine here, function called by mistake 
     }
     for (uint16 CurrRow = 0; CurrRow < CurrRowSize; CurrRow++) {
         for (uint16 CurrCol = 0; CurrCol < CurrColSize; CurrCol++) {
-            /** Place Mine at first free tile found, then clear input Tile */
+            // Place Mine at first free tile found, then clear input Tile
             if (!GetAttributes<EBitField::IsMine>({CurrRow, CurrCol})) {
                 SetAttributes<EBitField::IsMine>({CurrRow, CurrCol}, 0x1);
                 SetAttributes<EBitField::IsMine>({TileCoords.X, TileCoords.Y}, 0x0);
@@ -531,7 +530,7 @@ FSysManager::SpreadStep(FCoords TileCoords)
                 const bool bPathEmpty = CurrentTilePath.empty();
                 const bool bLastStep = Step == 0x2;
 
-                /** go back one step if step can't contniue in any direction */
+                // Go back one step if step can't contniue in any direction
                 if (bLastStep && bCantStep && !bPathEmpty) {
                     TileCoords = CurrentTilePath.back(); // Reset tile, go to next step
                     CurrentTilePath.pop_back();
@@ -543,7 +542,7 @@ FSysManager::SpreadStep(FCoords TileCoords)
                     break;
                 }
 
-                /** Skip loop step if it isn't last four-way step */
+                // Skip loop step if it isn't last four-way step
                 if (bCantStep) {
                     TileCoords = LastTile;
                     continue;
@@ -653,4 +652,3 @@ uint8 &
 FObfuscator::FK() { return HG(); }
 
 #undef LOCTEXT_NAMESPACE
-//IMPLEMENT_MODULE(FMineSweeperEditorModule, MineSweeperEditor)
