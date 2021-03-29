@@ -12,9 +12,9 @@
 
 #define LOCTEXT_NAMESPACE "MineSweeperEditorModule"
 
-/**
+/*
  *
- * @brief FSysManager::  Public member functions 
+ * FSysManager::  Public member functions 
  * @function void FSysManager(), InitBtnSBrush() 
  * @function TSharedRef<SButton> GetGridFSlot(Coords)
  * @function FSysManager::EGameState ClickTile(uint8, uint8)
@@ -23,7 +23,11 @@
  * @function void SetAttributes<FSysManager::EBitField>(const Coords, const uint8);
  * @function void ResetGame()
  * 
- **/
+ */
+
+/*
+ * Setting the FSlateImageBrushes with actual images
+ */
 FSysManager::FSysManager()
 {
     OptGridWidgetRef = MakeShared<SUniformGridPanel>();
@@ -58,8 +62,8 @@ void
 FSysManager::UpdateScoreWidget()
 {
     (*OptScoreRef)->SetText(
-        FText::FromString("Wins: " + FString::FromInt(Ws) + "\n"
-                          + "Losses:" + FString::FromInt(Ls)));
+        FText::FromString("Wins: " + FString::FromInt(Wins) + "\n"
+                          + "Losses:" + FString::FromInt(Losses)));
 }
 
 /*
@@ -135,13 +139,13 @@ FSysManager::EGameState
 FSysManager::ClickTile(const FCoords TileCoords)
 {
     ClickedTiles++;
-    /** If clicked on Mine */
+    // If clicked on Mine
     if (GetAttributes<EBitField::IsMine>(TileCoords)) {
-        /** If first tile is clicked */
+        // If first tile is clicked
         if (ClickedTiles == 0x1) {
             ReplaceMine(TileCoords);
         } else {
-            Ls += 0x1;
+            Losses += 0x1;
             DisplayBombs();
             SetEnableSlateGrid(false);
             ClickedTiles--;
@@ -149,7 +153,7 @@ FSysManager::ClickTile(const FCoords TileCoords)
             return EGameState::L;
         }
     } else if (ClickedTiles >= FreeTilesCount) {
-        Ws += 0x1;
+        Wins += 0x1;
         SetAttributes<EBitField::IsClicked>(TileCoords, 0x1);
         CheckNeighbours(TileCoords);
         DisplayBombs();
@@ -158,12 +162,12 @@ FSysManager::ClickTile(const FCoords TileCoords)
         return EGameState::W;
     }
     (*OptStatsRef)->SetText(NUMTEXTARG(FREETILES));
-    /** path to handle checking tile and freeing it */
+    // Path to handle checking tile and freeing it
     SpreadStep(TileCoords);
     if (ClickedTiles < FreeTilesCount) {
         return EGameState::P;
     }
-    Ws += 0x1;
+    Wins += 0x1;
     SetEnableSlateGrid(false);
     return EGameState::W;
 }
@@ -212,10 +216,10 @@ FSysManager::SaveState() const
     FPlatformFileManager::Get().GetPlatformFile().CreateDirectory(*FilePath);
     FilePath += TEXT("Sweeper.dat");
     uint8 TotalArr[4] = {0};
-    TotalArr[0] = Ws & 0xff;
-    TotalArr[1] = Ws >> 0x8;
-    TotalArr[2] = Ls & 0xff;
-    TotalArr[3] = Ls >> 0x8;
+    TotalArr[0] = Wins & 0xff;
+    TotalArr[1] = Wins >> 0x8;
+    TotalArr[2] = Losses & 0xff;
+    TotalArr[3] = Losses >> 0x8;
     const TArrayView<const uint8> DatView = TotalArr;
     FFileHelper::SaveArrayToFile(DatView, *FilePath, &IFileManager::Get(), FILEWRITE_NoFail);
 }
@@ -234,13 +238,13 @@ FSysManager::LoadState()
     }
     uint8 TotalArr[4] = {0};
     FilePtr->Read(&TotalArr[0x0], 0x4);
-    Ws = (static_cast<uint16>(TotalArr[0]) << 0x8) | static_cast<uint16>(TotalArr[1]);
-    Ls = (static_cast<uint16>(TotalArr[2]) << 0x8) | static_cast<uint16>(TotalArr[3]);
+    Wins = (static_cast<uint16>(TotalArr[0]) << 0x8) | static_cast<uint16>(TotalArr[1]);
+    Losses = (static_cast<uint16>(TotalArr[2]) << 0x8) | static_cast<uint16>(TotalArr[3]);
 }
 
 /*
-* Reset Game-board (Generating new match)
-*/
+ * Reset Game-board (Generating new match)
+ */
 void
 FSysManager::ResetGame()
 {
@@ -259,8 +263,8 @@ FSysManager::ResetGame()
 }
 
 /*
-* Restart same Game
-*/
+ * Restart same Game
+ */
 void
 FSysManager::RestartGame()
 {
@@ -293,7 +297,7 @@ FSysManager::FSetNextDiff(FSysManager::EGameDifficulty NextDiff)
 }
 
 
-/**
+/*
  * 
  * FSysManager::  Private member functions
  * @function void ClearGridData()
@@ -304,11 +308,11 @@ FSysManager::FSetNextDiff(FSysManager::EGameDifficulty NextDiff)
  * @function void CheckNeighbours(const Coords) 
  * @function void SpreadStep(Coords) 
  *
- **/
+ */
 
 /*
-* Clear GridData
-*/
+ * Clear GridData
+ */
 void
 FSysManager::ClearGridData()
 {
@@ -319,6 +323,9 @@ FSysManager::ClearGridData()
     }
 }
 
+/*
+ * Set enable FSysManager->SlateGrid 
+ */
 void
 FSysManager::SetEnableSlateGrid(bool bShouldEnable)
 {
@@ -335,19 +342,18 @@ FSysManager::PlaceMines()
 {
     const auto GridSize = CurrRowSize * CurrColSize;
 
-    /** Continue until all random mines have been created. */
+    // Continue until all random mines have been created.
     for (int PlacedCount = 0; PlacedCount < NumMines;) {
         const auto   Random = FMath::RandRange(0x0, GridSize);
         const uint16 X = Random / CurrRowSize;
         const uint16 Y = Random % CurrColSize;
 
-        /** Add the mine if no mine is placed at this position on the board */
+        // Add the mine if no mine is placed at this position on the board
         if (!GetAttributes<EBitField::IsMine>({X, Y})) {
             SetAttributes<EBitField::IsMine>({X, Y}, 0x1);
             PlacedCount++;
         }
     }
-    return; // symbolic
 }
 
 /**
@@ -357,11 +363,11 @@ void
 FSysManager::ReplaceMine(FCoords TileCoords)
 {
     if (!GetAttributes<EBitField::IsMine>({TileCoords.X, TileCoords.Y})) {
-        return; /** Already no mine here, function called by mistake */
+        return; // Already no mine here, function called by mistake
     }
     for (uint16 CurrRow = 0; CurrRow < CurrRowSize; CurrRow++) {
         for (uint16 CurrCol = 0; CurrCol < CurrColSize; CurrCol++) {
-            /** Place Mine at first free tile found, then clear input Tile */
+            // Place Mine at first free tile found, then clear input Tile
             if (!GetAttributes<EBitField::IsMine>({CurrRow, CurrCol})) {
                 SetAttributes<EBitField::IsMine>({CurrRow, CurrCol}, 0x1);
                 SetAttributes<EBitField::IsMine>({TileCoords.X, TileCoords.Y}, 0x0);
@@ -435,8 +441,8 @@ FSysManager::CheckNeighbours(const FCoords TileCoords)
 }
 
 /*
-* Display BombTiles
-*/
+ * Display BombTiles
+ */
 void
 FSysManager::DisplayBombs()
 {
@@ -495,7 +501,7 @@ FSysManager::SpreadStep(FCoords TileCoords)
                  * 2. Compilers do not optimize if's into arihtemtic operations, even with optimization turned on
                  * 3. if statements, on assembly-level, loads a group of instructions into memory, and then checks if the supplied condition is met.
                  *    In-case the condition is not met during evaluation, then it throws away the loaded instructions and then wastes time loading the other instruction, during runtime, before executing.
-                 **/ 
+                 */ 
                 TileCoords.Y +=
                     ((TileCoords.Y < (CurrColSize - 1)) * (ColMod == 0x1)) -
                     ((TileCoords.Y > 0) * (ColMod == -0x1));
@@ -513,7 +519,7 @@ FSysManager::SpreadStep(FCoords TileCoords)
                 const bool bPathEmpty = CurrentTilePath.empty();
                 const bool bLastStep = Step == 0x2;
 
-                /** go back one step if step can't contniue in any direction */
+                // Go back one step if we can't contniue in any direction
                 if (bLastStep && bCantStep && !bPathEmpty) {
                     TileCoords = CurrentTilePath.back(); // Reset tile, go to next step
                     CurrentTilePath.pop_back();
@@ -525,7 +531,7 @@ FSysManager::SpreadStep(FCoords TileCoords)
                     break;
                 }
 
-                /** Skip loop step if it isn't last four-way step */
+                // Skip loop step if it isn't last four-way step
                 if (bCantStep) {
                     TileCoords = LastTile;
                     continue;
@@ -546,8 +552,8 @@ FSysManager::SpreadStep(FCoords TileCoords)
 
 
 /*
-* Set Game-board difficulty/
-*/
+ * Set Game-board difficulty/
+ */
 void
 FSysManager::SetDifficulty()
 {
@@ -563,6 +569,4 @@ FSysManager::SetDifficulty()
     }
     FreeTilesCount = GridSize - NumMines;
 }
-
 #undef LOCTEXT_NAMESPACE
-//IMPLEMENT_MODULE(FMineSweeperEditorModule, MineSweeperEditor)

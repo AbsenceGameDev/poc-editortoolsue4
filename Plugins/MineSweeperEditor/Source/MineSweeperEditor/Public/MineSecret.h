@@ -31,7 +31,7 @@ struct FCoordsT {
     uint16 Y;
 
 
-    /** Arithmetic operations */
+    // Arithmetic operations
     FCoordsT
     operator =(const FCoordsT & C2)
     {

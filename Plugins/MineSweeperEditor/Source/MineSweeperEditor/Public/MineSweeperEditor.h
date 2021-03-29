@@ -20,11 +20,13 @@
  **/
 class FMineSweeperEditorModule : public IModuleInterface {
 public:
-
+    /*
+     * Public member variables
+     *  
+     */
+    
     /**
-     * @name SysManager
-     * @typedef TSharedPtr<FSysManager>
-     * @brief Public member variables
+     * @brief System Manager
      * @details A shared pointer to an FSysManager,
      * which manages much of the game and the system functionality. \n
      * In contrast to FMineSweeperEditorModule,
@@ -33,10 +35,11 @@ public:
      **/
     TSharedPtr<FSysManager> SysManager;
 
-    /**
-     * @brief Public member functions
+    
+    /*
+     * Public member functions
      * 
-     **/
+     */
 
     /**
      * @brief FMineSweeperEditorModule constructor
@@ -103,20 +106,22 @@ public:
     RegenerateGrid(uint8 Xin, uint8 Yin, TSharedRef<class SUniformGridPanel>) const;
 private:
 
-    /**
-     * @brief Private member variables
+    /*
+     * Private member variables
      * 
-     **/
+     */
+    
     TSharedPtr<class FUICommandList> PluginCmds;
     FCurveSequence                   Sequence;
     FCurveHandle                     ZoomCurve;
     FCurveHandle                     FadeCurve;
 
-    /**
-     * @brief Private member functions
+    
+    /*
+     * Private member functions
      * 
-     **/
-
+     */
+    
     /**
      * @brief Register level editor menu
      **/
@@ -134,7 +139,6 @@ private:
      **/
     TSharedRef<class SUniformGridPanel>
     GenerateGrid(uint8 Xin, uint8 Yin) const;
-
 
     /**
      * @brief Call when spawning window to spawn internal tab/page.

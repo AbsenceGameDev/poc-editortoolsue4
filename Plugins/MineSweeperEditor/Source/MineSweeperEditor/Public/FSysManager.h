@@ -24,16 +24,15 @@
  **/
 class FSysManager {
 public:
-    /**
-     * @brief Public member variables
+    /*
+     * Public member variables
      * 
-     **/
-    
+     */
     TSharedPtr<FSlateImageBrush> FlagBrush,         QuestionBrush,        BombBrush;
     static constexpr uint16      Gmax_Size = 0x40;
     uint16                       FreeTilesCount = 0x0, ClickedTiles = 0x0;
     uint16                       CurrRowSize = 0x5, CurrColSize = 0x5;
-    uint16                       Ws = 0x0,          Ls = 0x0;
+    uint16                       Wins = 0x0,          Losses = 0x0;
 
     /**
      * @brief Grid Data array.
@@ -98,10 +97,10 @@ public:
         STextScoreRef = 0x6
     };
 
-    /**
-     * @brief Public member functions
+    /*
+     * Public member functions
      * 
-     **/
+     */
 
     /**
      * @brief FSysManager constructor
@@ -140,14 +139,6 @@ public:
      **/
     TOptional<uint16>
     DisplayRowSize() const;
-
-    /**
-     * @brief Returns End-game message for widget.
-     * @details Is used to bind to an STextBlock through .Text_Raw()
-     * @return FText containing the End-game message 
-     **/
-    FText
-    DisplayEndMsg() const;
 
     /**
      * @brief Assigns 'NewRowSize' to this->NextRowSize 
@@ -262,10 +253,10 @@ public:
     void
     FSetNextDiff(EGameDifficulty NextDiff);
 private:
-    /**
-     * @brief Private member variables
+    /*
+     * Private member variables
      * 
-     **/
+     */
     bool bPlaySameAgain = true;
     std::vector<TSharedRef<SButton>> SlateGrid; /** Refs to actual tile-widgets on the grid */
     std::vector<TSharedRef<SButton>> DifficultyList; /** Refs to actual tile-widgets on the grid */
@@ -277,10 +268,10 @@ private:
     EGameDifficulty NextDifficulty = EGameDifficulty::Normal;
 
 
-    /**
-     * @brief Private member functions
+    /*
+     * Private member functions
      * 
-     **/
+     */
 
     /**
      * @brief Clears grid data.  
