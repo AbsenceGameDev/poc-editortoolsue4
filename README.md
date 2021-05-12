@@ -10,6 +10,6 @@ Goals (finished)
 
 -> Perfomantly handle large amounts of data and objects.
 
--> Keep tool data in a POD format that is seperated from the UI-objects, no need of heavy objects when we can avoid. 
+-> Keep tool data in a POD format that is seperated from the UI-objects, no need of heavy objects if avoidable. 
 
 -> Implement simple template-based code obfuscation (To hide an easter-egg in the code, good luck finding it!)  
