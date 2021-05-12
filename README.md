@@ -1,6 +1,10 @@
 # minesweeper_poc_editortoolsue4
-Started as a test, has been further elaborated upon since on my windows machine. q
+Started as a test, has been further elaborated upon since on my windows machine.
 (Will update the repo when I have access to my windows machine again)
+
+
+Generated doxygen documentation is located at: poc-editortoolsue4/Plugins/MineSweeperEditor/Documentation/
+
 
 Goals (finished)
 
